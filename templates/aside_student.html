@@ -1,0 +1,61 @@
+<!-- Desktop Sidebar (hidden on mobile) -->
+<aside class="sidebar">
+    <div class="profile">
+        <i class="ri-user-3-fill"></i>
+        <h3>Student</h3>
+    </div>
+    <nav>
+        <a href="index.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+        <a href="requirements.php"><i class="ri-clipboard-line"></i><span>Requirements</span></a>
+        <a href="documents.php"><i class="ri-download-line"></i><span>Download Documents</span></a>
+        <a href="student_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
+        <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
+    </nav>
+    <div class="footer">
+        <i class='bx bx-copyright'></i>
+        <p>2025 Research Monitoring</p>
+    </div>
+</aside>
+
+<!-- Mobile Bottom Navigation (hidden on desktop) -->
+<div class="bottom-nav">
+    <nav>
+        <a href="index.php" data-page="index">
+            <i class="ri-dashboard-line"></i>
+            <span>Home</span>
+        </a>
+        <a href="requirements.php" data-page="requirements">
+            <i class="ri-clipboard-line"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="documents.php" data-page="documents">
+            <i class="ri-download-line"></i>
+            <span>Files</span>
+        </a>
+        <a href="student_profile.php" data-page="student_profile">
+            <i class="ri-user-line"></i>
+            <span>Profile</span>
+        </a>
+        <a href="home.php" data-page="home">
+            <i class="ri-logout-box-line"></i>
+            <span>Logout</span>
+        </a>
+    </nav>
+</div>
+
+<script>
+// Highlight active page in bottom navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Get current page filename
+    const currentPage = window.location.pathname.split('/').pop().replace('.php', '') || 'index';
+    
+    // Find and highlight the active link
+    const navLinks = document.querySelectorAll('.bottom-nav nav a');
+    navLinks.forEach(link => {
+        const pageName = link.getAttribute('data-page');
+        if (pageName === currentPage) {
+            link.classList.add('active');
+        }
+    });
+});
+</script>

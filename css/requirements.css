@@ -1,0 +1,689 @@
+/* Base Styles */
+.wrapper {
+    margin-left: 155px;
+    margin-right: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background: #ffffff;
+    padding: 40px 50px;
+    border-radius: 18px;
+    box-shadow: 0px 4px 16px rgba(0,0,0,0.12);
+    max-width: 1200px;
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.req-title {
+    text-align: center;
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 40px;
+    margin-top: 0;
+}
+
+/* Assignments Banner */
+.assignments-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.assignments-banner h2 {
+    margin: 0 0 15px 0;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.assignments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.assignment-section {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.assignment-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.assignment-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.assignment-tag {
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.assignment-tag.thrust {
+    color: #764ba2;
+}
+
+.assignment-tag i {
+    font-size: 14px;
+}
+
+/* Requirements Grid */
+.req-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+    gap: 25px;
+}
+
+/* Card Styles */
+.req-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0px 3px 8px rgba(0,0,0,0.10);
+    overflow: hidden;
+}
+
+.req-header {
+    background: #a10000;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.req-title-text {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.add-btn {
+    background: #ffec5c;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-btn.disabled {
+    background: #cfcfcf;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.req-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    font-size: 18px;
+}
+
+.req-body .left-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.req-body i {
+    font-size: 30px;
+    color: #444;
+}
+
+/* Status Badges */
+.status-badge {
+    background: #f0f0f0;
+    color: #333;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-missing {
+    background: #e9ecef;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* File Upload */
+input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.choose-file-btn {
+    background-color: #D90404;
+    color: #fff;
+    padding: 6px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+    transition: 0.2s;
+}
+
+.choose-file-btn:hover {
+    background-color: #b10303;
+}
+
+/* Comments */
+.add-comment {
+    padding: 16px 22px;
+    border-top: 1px solid #ddd;
+    color: #0066cc;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.add-comment:hover {
+    background: #f8f9fa;
+}
+
+/* Locked Card Styles */
+.req-card.locked {
+    background-color: #ececec;
+    border-color: #d0d0d0;
+    opacity: 0.75;
+    filter: grayscale(40%);
+    position: relative;
+}
+
+.req-card.locked::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+    pointer-events: none;
+}
+
+.req-card.locked .req-header {
+    background-color: #b30000;
+}
+
+.req-card.locked .req-body {
+    color: #666;
+}
+
+.req-card.locked .choose-file-btn {
+    background: #d6d6d6;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.req-card.locked .add-comment {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.req-card.locked::after {
+    content: "LOCKED";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+}
+
+.modal.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+}
+
+.modal-content {
+    position: relative;
+    max-width: 520px;
+    margin: 8% auto;
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    z-index: 1201;
+}
+
+.modal-close {
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.modal-body {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+}
+
+.comment-empty {
+    color: #666;
+    font-size: 18px;
+    text-align: center;
+}
+
+.comment-text {
+    color: #222;
+    font-size: 15px;
+    white-space: pre-wrap;
+}
+
+.file-info-modal {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    margin-top: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #b30000;
+    text-decoration: none;
+    color: #333;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.file-info-modal:hover {
+    background: #ececec;
+    transform: translateY(-1px);
+}
+
+.file-info-modal i {
+    font-size: 1.3em;
+    color: #b30000;
+}
+
+.file-info-modal .file-name {
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+}
+
+.file-info-modal .file-date {
+    font-size: 0.85em;
+    color: #777;
+}
+
+/* Note */
+.note {
+    text-align: center;
+    margin-top: 30px;
+    opacity: 0.8;
+}
+
+/* Sidebar Integration */
+body {
+    display: flex;
+}
+
+.wrapper {
+    flex: 1;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar:hover ~ .wrapper {
+    margin-left: 260px !important;
+}
+
+/* ===========================
+   TABLET & MOBILE RESPONSIVE
+   =========================== */
+
+/* Tablet (768px and below) */
+@media (max-width: 768px) {
+    .wrapper {
+        margin-left: 10px;
+        margin-right: 10px;
+        padding: 25px 20px;
+        margin-bottom: 90px;
+
+    }
+
+    .req-title {
+        font-size: 32px;
+        margin-bottom: 25px;
+    }
+
+    .req-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .assignments-banner {
+        padding: 20px;
+    }
+
+    .assignments-banner h2 {
+        font-size: 18px;
+    }
+
+    .assignments-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .req-header {
+        padding: 12px 16px;
+    }
+
+    .req-title-text {
+        font-size: 18px;
+    }
+
+    .add-btn {
+        padding: 5px 12px;
+        font-size: 13px;
+    }
+
+    .req-body {
+        padding: 15px 16px;
+        font-size: 16px;
+    }
+
+    .req-body i {
+        font-size: 26px;
+    }
+
+    .add-comment {
+        padding: 10px 16px;
+        font-size: 15px;
+    }
+}
+
+/* Mobile (480px and below) */
+@media (max-width: 480px) {
+    .wrapper {
+        margin: 10px;
+        margin-bottom: 70px;
+        padding: 20px 16px;
+        border-radius: 12px;
+    }
+
+    .req-title {
+        font-size: 26px;
+        margin-bottom: 20px;
+    }
+
+    .req-container {
+        gap: 14px;
+    }
+
+    /* Assignments Banner Mobile */
+    .assignments-banner {
+        padding: 16px;
+    }
+
+    .assignments-banner h2 {
+        font-size: 16px;
+        margin-bottom: 12px;
+    }
+
+    .assignment-section {
+        padding: 12px;
+    }
+
+    .assignment-section h3 {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .assignment-tag {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
+    /* Card Header Mobile */
+    .req-header {
+        padding: 12px 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .req-title-text {
+        font-size: 16px;
+    }
+
+    .add-btn {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+
+    /* Card Body Mobile */
+    .req-body {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .req-body .left-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .req-body i {
+        font-size: 24px;
+    }
+
+    .status-text {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    /* File Upload Mobile */
+    .choose-file-btn {
+        width: 100%;
+        padding: 12px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    /* Comments Mobile */
+    .add-comment {
+        padding: 14px 14px 18px;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    /* Note Mobile */
+    .note {
+        font-size: 12px;
+        margin-top: 20px;
+        padding: 0 10px;
+    }
+
+    /* Modal Mobile */
+    .modal-content {
+        max-width: calc(100% - 32px);
+        margin: 20px 16px;
+        padding: 16px;
+    }
+
+    .modal-content h3 {
+        font-size: 16px;
+        padding-right: 30px;
+    }
+
+    .modal-close {
+        font-size: 20px;
+    }
+
+    .comment-empty {
+        font-size: 14px;
+        padding: 30px 16px;
+    }
+
+    .comment-text {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .adviser-name {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .file-info-modal {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .file-info-modal i {
+        font-size: 1.2em;
+    }
+
+    .file-info-modal .file-name {
+        font-size: 13px;
+        word-break: break-word;
+    }
+
+    .file-info-modal .file-date {
+        font-size: 11px;
+    }
+
+    /* Locked Card Mobile */
+    .req-card.locked::after {
+        font-size: 16px;
+        letter-spacing: 2px;
+    }
+}
+
+/* Extra Small Mobile (360px and below) */
+@media (max-width: 360px) {
+    .wrapper {
+        margin: 8px;
+        padding: 16px 12px;
+    }
+
+    .req-title {
+        font-size: 22px;
+        margin-bottom: 16px;
+    }
+
+    .req-header {
+        padding: 10px 12px;
+    }
+
+    .req-title-text {
+        font-size: 14px;
+    }
+
+    .add-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .req-body {
+        padding: 12px;
+    }
+
+    .assignments-banner {
+        padding: 12px;
+    }
+
+    .assignments-banner h2 {
+        font-size: 14px;
+    }
+
+    .assignment-section {
+        padding: 10px;
+    }
+
+    .modal-content {
+        margin: 16px 12px;
+        padding: 14px;
+    }
+}
+
+/* Landscape Mode Fixes */
+@media (max-height: 600px) and (orientation: landscape) {
+    .wrapper {
+        max-height: none;
+        padding: 20px 25px;
+    }
+
+    .req-title {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    .modal-content {
+        margin: 5% auto;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+}

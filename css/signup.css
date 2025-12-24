@@ -1,0 +1,439 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background-color: azure;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.error-message {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #b00000;
+    border: 1px solid #ff6b6b;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    animation: fadeInDown 0.5s ease forwards;
+    opacity: 0;
+    z-index: 9999;
+}
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+}
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signup-box {
+    background-color: transparent;
+    border: 1px solid #680000;
+    border-radius: 10px;
+    padding: 40px 35px;
+    width: 420px;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    color: #680000;
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    background-color: #5e0000;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 15px;
+    font-size: 30px;
+    color: #ffffff;
+}
+.avatar i{
+    font-size: 50px;
+}
+.signup-box h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    letter-spacing: 1px;
+}
+
+/* INPUTS */
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    background-color: transparent;
+    border: 1px solid #680000;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.input-group ::placeholder{
+    color: #680000;
+}
+.icon {
+    background-color: #5e0000;
+    padding: 14px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.input-group input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 12px;
+    background-color: transparent;
+    color: #560000;
+    font-size: 14px;
+}
+
+/* BUTTON */
+.submit-btn input {
+    width: 100%;
+    background-color: #680000;
+    border: none;
+    color: white;
+    padding: 12px;
+    font-weight: 600;
+    border-radius: 25px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.submit-btn input:hover {
+    background-color: #9b0101;
+}
+
+/* LINK */
+.login-link {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.login-link a {
+    color: #5e0000;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+/* ADMIN LOGIN */
+
+.container .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.container .a a{
+    position: relative;
+    text-decoration: none;
+    color: rgb(0, 57, 5);
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.container .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: rgb(0, 53, 0);
+    transition: width 0.3s ease;
+}
+.container .a a:hover{
+    color: rgb(24, 143, 24);
+}
+.container .a a:hover::after{
+    width: 100%;
+}
+
+/* ADVISOR LOGIN */
+
+.containers .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.containers .a a{
+    position: relative;
+    text-decoration: none;
+    color: #b00000;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.containers .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: #6d0101;
+    transition: width 0.3s ease;
+}
+.containers .a a:hover{
+    color: hotpink;
+}
+.containers .a a:hover::after{
+    width: 100%;
+}
+
+/* STUDENT LOGIN */
+.contain .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.contain .a a{
+    position: relative;
+    text-decoration: none;
+    color: #1A2A4F;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.contain .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: navy;
+    transition: width 0.3s ease;
+}
+.contain .a a:hover{
+    color: #739EC9;
+}
+.contain .a a:hover::after{
+    width: 100%;
+}
+
+/* COORDINATOR LOG IN */
+.contains .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.contains .a a{
+    position: relative;
+    text-decoration: none;
+    color: #b0b000;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.contains .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: #6b6d01;
+    transition: width 0.3s ease;
+}
+.contains .a a:hover{
+    color: rgb(253, 255, 105);
+}
+.contains .a a:hover::after{
+    width: 100%;
+}
+.password-error {
+    color: #b00000;
+    background-color: rgba(255, 0, 0, 0.05);
+    border: 1px solid #ff8080;
+    padding: 6px 12px;
+    margin: 5px 0 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    text-align: left;
+    animation: fadeIn 0.3s ease forwards;
+    transition: opacity 1s ease;
+}
+
+/* @keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-5px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+} */
+
+.success-message {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(55, 255, 0, 0.1);
+    color: #037e03;
+    border: 1px solid #49e749;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    animation: fadeInDown 0.5s ease forwards;
+    opacity: 0;
+    z-index: 1000;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+}
+/* MOBILE RESPONSIVE DESIGN */
+@media (max-width: 480px) {
+
+  
+
+    .container,
+    .containers,
+    .contain,
+    .contains {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 0 10px;
+        box-sizing: border-box;
+        margin: auto;
+    }
+
+    .signup-box {
+        
+        width: 100%;
+        max-width: 330px;     /* fits small phones */
+        padding: 25px 20px;   /* smaller padding */
+        border-radius: 10px;
+    }
+
+    .avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 26px;
+    }
+
+    .avatar i {
+        font-size: 40px;
+    }
+
+    .signup-box h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+
+    /* INPUT GROUP */
+    .input-group {
+        margin-bottom: 12px;
+        border-radius: 5px;
+    }
+
+    .icon {
+        padding: 12px;
+        font-size: 16px;
+    }
+
+    .input-group input {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    /* BUTTON */
+    .submit-btn input {
+        padding: 10px;
+        font-size: 15px;
+        border-radius: 20px;
+    }
+
+    .login-link {
+        font-size: 12px;
+    }
+
+    /* SMALL NOTICE TEXT */
+    .signup-box p {
+        font-size: 10px !important;
+    }
+
+    /* FOOTER */
+    .footer {
+        font-size: 0.75rem;
+        padding: 10px;
+        border-radius: 30px 30px 0 0;
+        position: relative; /* removes overflow issues */
+        margin-top: 10px;
+    }
+}
+
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background-color: #a00000;
+    color: #fff;
+    text-align: center;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-size: 0.9rem;
+}
+

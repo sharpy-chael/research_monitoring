@@ -1,0 +1,56 @@
+<!-- Desktop Sidebar (hidden on mobile) -->
+<aside class="sidebar">
+    <div class="profile">
+        <i class="ri-user-3-fill"></i>
+        <h3>Coordinator</h3>
+    </div>
+    <nav>
+        <a href="coordinator.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+        <a href="manage.php"><i class="ri-clipboard-line"></i><span>Research Management</span></a>
+        <a href="setup.php"><i class="ri-download-line"></i><span>Research Setup</span></a>
+        <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
+    </nav>
+    <div class="footer">
+        <i class='bx bx-copyright'></i>
+        <p>2025 Research Monitoring</p>
+    </div>
+</aside>
+
+<!-- Mobile Bottom Navigation (hidden on desktop) -->
+<div class="bottom-nav">
+    <nav>
+        <a href="coordinator.php" data-page="coordinator">
+            <i class="ri-dashboard-line"></i>
+            <span>Home</span>
+        </a>
+        <a href="manage.php" data-page="research_management">
+            <i class="ri-clipboard-line"></i>
+            <span>Manage</span>
+        </a>
+        <a href="setup.php" data-page="research_setup">
+            <i class="ri-download-line"></i>
+            <span>Setup</span>
+        </a>
+        <a href="home.php" data-page="home">
+            <i class="ri-logout-box-line"></i>
+            <span>Logout</span>
+        </a>
+    </nav>
+</div>
+
+<script>
+// Highlight active page in bottom navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Get current page filename
+    const currentPage = window.location.pathname.split('/').pop().replace('.php', '') || 'coordinator';
+    
+    // Find and highlight the active link
+    const navLinks = document.querySelectorAll('.bottom-nav nav a');
+    navLinks.forEach(link => {
+        const pageName = link.getAttribute('data-page');
+        if (pageName === currentPage) {
+            link.classList.add('active');
+        }
+    });
+});
+</script>

@@ -1,0 +1,228 @@
+/* Desktop Styles */
+.download-wrapper {
+    background: #ffffff;
+    padding: 40px 50px;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    max-width: 1150px;
+    margin: 25px auto 40px auto !important;
+    margin-bottom: 80px !important;
+}
+
+.doc-title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 35px;
+    color: #333;
+}
+
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.doc-item {
+    width: 100%;
+    background: #fff;
+    padding: 20px 28px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.doc-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.doc-item .left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.doc-item i {
+    font-size: 32px;
+    color: #a10000;
+}
+
+.doc-item span {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.download-btn {
+    background: #0cc45c;
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: 0.2s ease;
+    white-space: nowrap;
+}
+
+.download-btn:hover {
+    background: #00af4e;
+    transform: scale(1.02);
+}
+
+.download-btn:active {
+    transform: scale(0.98);
+}
+
+/* Tablet View (768px and below) */
+@media (max-width: 768px) {
+    .download-wrapper {
+        margin: 20px 10px 30px 10px !important;
+        padding: 30px 25px;
+        border-radius: 14px;
+    }
+
+    .doc-title {
+        font-size: 32px;
+        margin-bottom: 25px;
+    }
+
+    .doc-list {
+        gap: 14px;
+    }
+
+    .doc-item {
+        padding: 18px 20px;
+    }
+
+    .doc-item i {
+        font-size: 28px;
+    }
+
+    .doc-item span {
+        font-size: 18px;
+    }
+
+    .download-btn {
+        padding: 9px 20px;
+        font-size: 15px;
+    }
+}
+
+/* Mobile View (480px and below) */
+@media (max-width: 480px) {
+    .download-wrapper {
+        margin: 15px 10px 25px 10px !important;
+        padding: 24px 16px;
+        padding-bottom: 40px;
+        border-radius: 12px;
+        margin-bottom: 50px !important;
+    }
+    .space{
+        height: 20px;
+    }
+    .doc-title {
+        font-size: 26px;
+        margin-bottom: 20px;
+    }
+
+    .doc-list {
+        gap: 12px;
+    }
+
+    .doc-item {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        gap: 12px;
+        border-radius: 12px;
+    }
+
+    .doc-item .left {
+        gap: 12px;
+    }
+
+    .doc-item i {
+        font-size: 26px;
+    }
+
+    .doc-item span {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .download-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 15px;
+        text-align: center;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    /* Remove hover effect on mobile */
+    .doc-item:hover {
+        transform: none;
+    }
+}
+
+/* Extra Small Mobile (360px and below) */
+@media (max-width: 360px) {
+    .download-wrapper {
+        margin: 12px 8px 20px 8px !important;
+        padding: 20px 14px;
+        padding-bottom: 40px;
+        margin-bottom: 100px !important;
+    }
+
+    .doc-title {
+        font-size: 22px;
+        margin-bottom: 16px;
+    }
+
+    .doc-list {
+        gap: 10px;
+    }
+
+    .doc-item {
+        padding: 14px;
+    }
+
+    .doc-item i {
+        font-size: 24px;
+    }
+
+    .doc-item span {
+        font-size: 15px;
+    }
+
+    .download-btn {
+        padding: 11px 18px;
+        font-size: 14px;
+    }
+}
+
+/* Landscape Mode Fixes */
+@media (max-height: 600px) and (orientation: landscape) {
+    .download-wrapper {
+        padding: 25px 30px;
+    }
+
+    .doc-title {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    .doc-list {
+        gap: 10px;
+    }
+
+    .doc-item {
+        padding: 14px 20px;
+    }
+}

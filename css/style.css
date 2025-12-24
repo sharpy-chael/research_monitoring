@@ -1,0 +1,641 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+     font-family: "Poppins", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: azure;
+}
+
+/* student log in */
+
+.wrapper{
+    width: 100%;
+    max-width: 420px;
+    background-color:transparent;
+    color: navy;
+    border-radius: 10px;
+    padding: 30px 40px;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
+}
+.wrapper h1{
+    font-size: 36px;
+    text-align: center;
+}
+.wrapper a i{
+    color: navy;
+    font-weight: bolder;
+    font-size: 50px;
+    transition: color ease 0.3s, font-size ease 0.3s;
+}
+.wrapper a i:hover{
+    color: #8DD8FF;
+    font-size: 48px;
+}
+.wrapper .input-box{
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+}
+.input-box input{
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    border: 1px solid rgb(17, 156, 144);
+    border-radius: 40px;
+    font-size: 17px;
+    color: rgb(0, 43, 40);
+    padding: 20px 45px 20px 20px;
+}
+.input-box input::placeholder{
+    color: navy;
+}
+.input-box i{
+    position: absolute;
+    right: 20px;
+    top: 70%;
+    transform: translateY(-10%);
+    font-size: 20px;
+}
+.wrapper .btn input{
+    margin-top: 40px;
+    width: 100%;
+    height: 45px;
+    background: white;
+    color: navy;
+    font-weight: bolder;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.wrapper .btn input:hover{
+    color: navy;
+    background-color: rgba(135, 207, 235, 0.529);
+}
+
+.wrapper .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.wrapper .a a{
+    position: relative;
+    text-decoration: none;
+    color: rgb(0, 217, 255);
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.wrapper .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0;
+    height: 2px;
+    background-color: rgb(0, 9, 91);
+    transition: width 0.3s ease;
+}
+.wrapper .a a:hover{
+    color: cyan;
+}
+.wrapper .a a:hover::after{
+    width: 100%;
+}
+.error-message {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #b00000;
+    border: 1px solid #ff6b6b;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    animation: fadeInDown 0.5s ease forwards;
+    opacity: 0;
+    z-index: 1000;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+}
+/* admin log in */
+
+.wrappers{
+    width: 100%;
+    max-width: 420px;
+    background-color: transparent;
+    color: green;
+    border-radius: 10px;
+    padding: 30px 40px;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
+}
+.wrappers h1{
+    font-size: 36px;
+    text-align: center;
+}
+.wrappers a i{
+    color: darkgreen;
+    font-weight: bolder;
+    font-size: 50px;
+    transition: color ease 0.3s, font-size ease 0.3s;
+}
+.wrappers a i:hover{
+    color: #ABE7B2;
+    font-size: 48px;
+}
+.wrappers .input{
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+}
+.input input{
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    border: 1px solid rgb(49, 255, 125);
+    border-radius: 40px;
+    font-size: 17px;
+    color: rgb(1, 75, 1);
+    padding: 20px 45px 20px 20px;
+}
+.input input::placeholder{
+    color: green;
+}
+.input i{
+    position: absolute;
+    right: 20px;
+    top: 70%;
+    transform: translateY(-10%);
+    font-size: 20px;
+}
+.wrappers .btn input{
+    margin-top: 40px;
+    width: 100%;
+    height: 45px;
+    background: white;
+    color: rgb(12, 123, 0);
+    font-weight: bolder;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.wrappers .btn input:hover{
+    background-color: rgba(1, 246, 79, 0.459);
+    color: rgb(1, 73, 1);
+}
+.wrappers .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.wrappers .a a{
+    position: relative;
+    text-decoration: none;
+    color: rgb(0, 57, 5);
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.wrappers .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: rgb(0, 53, 0);
+    transition: width 0.3s ease;
+}
+.wrappers .a a:hover{
+    color: rgb(0, 108, 0);
+}
+.wrappers .a a:hover::after{
+    width: 100%;
+}
+
+.error-message {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #b00000;
+    border: 1px solid #ff6b6b;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    animation: fadeInDown 0.5s ease forwards;
+    opacity: 0;
+    z-index: 1000;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+}
+/* advisor log in */
+
+.wrap{
+    width: 100%;
+    max-width: 420px;
+    background-color: transparent;
+    color: red;
+    border-radius: 10px;
+    padding: 30px 40px;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
+}
+.wrap h1{
+    font-size: 36px;
+    text-align: center;
+}
+.wrap a i{
+    color: darkred;
+    font-weight: bolder;
+    font-size: 50px;
+    transition: color ease 0.3s, font-size ease 0.3s;
+}
+.wrap a i:hover{
+    color: deeppink;
+    font-size: 48px;
+}
+.wrap .inputed{
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+}
+.inputed input{
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    border: 1px solid rgb(184, 55, 55);
+    border-radius: 40px;
+    font-size: 17px;
+    color: #CD2C58;
+    padding: 20px 45px 20px 20px;
+}
+
+.inputed input::placeholder{
+    color: #CD2C58;
+}
+.inputed i{
+    position: absolute;
+    right: 20px;
+    top: 70%;
+    transform: translateY(-10%);
+    font-size: 20px;
+}
+.wrap .btn input{
+    margin-top: 40px;
+    width: 100%;
+    height: 45px;
+    background: white;
+    color: rgb(123, 0, 0);
+    font-weight: bolder;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.wrap .btn input:hover{
+    background-color: rgba(255, 79, 79, 0.538);
+    color: #410000;
+}
+.wrap .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.wrap .a a{
+    position: relative;
+    text-decoration: none;
+    color: #410000;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.wrap .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: rgb(76, 0, 0);
+    transition: width 0.3s ease;
+}
+.wrap .a a:hover{
+    color: #801313;
+}
+.wrap .a a:hover::after{
+    width: 100%;
+}
+.error-message {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #b00000;
+    border: 1px solid #ff6b6b;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    animation: fadeInDown 0.5s ease forwards;
+    opacity: 0;
+    z-index: 1000;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+}
+
+/* coorinator log in  */
+
+.wraps{
+    width: 100%;
+    max-width: 420px;
+    background-color: transparent;
+    color: rgb(224, 224, 11);
+    border-radius: 10px;
+    padding: 30px 40px;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
+}
+.wraps h1{
+    font-size: 36px;
+    text-align: center;
+}
+.wraps a i{
+    color: rgb(95, 100, 0);
+    font-weight: bolder;
+    font-size: 50px;
+    transition: color ease 0.3s, font-size ease 0.3s;
+}
+.wraps a i:hover{
+    color: #dbe7ab;
+    font-size: 48px;
+}
+.wraps .input{
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+}
+.wraps .input input{
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    border: 1px solid rgb(255, 245, 49);
+    border-radius: 40px;
+    font-size: 17px;
+    color: rgb(74, 75, 1);
+    padding: 20px 45px 20px 20px;
+}
+.wraps .input input::placeholder{
+    color: rgb(128, 90, 0);
+}
+.input i{
+    position: absolute;
+    right: 20px;
+    top: 70%;
+    transform: translateY(-10%);
+    font-size: 20px;
+}
+.wraps .btn input{
+    margin-top: 40px;
+    width: 100%;
+    height: 45px;
+    background: white;
+    color: rgb(123, 113, 0);
+    font-weight: bolder;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.btn input:hover{
+    background-color: rgba(246, 230, 1, 0.459);
+    color: rgb(69, 73, 1);
+}
+.wraps .a{
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.wraps .a a{
+    position: relative;
+    text-decoration: none;
+    color: rgb(0, 57, 5);
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+.wraps .a a::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background-color: rgb(61, 70, 1);
+    transition: width 0.3s ease;
+}
+.wraps .a a:hover{
+    color: rgb(105, 108, 0);
+}
+.wraps .a a:hover::after{
+    width: 100%;
+}
+
+.error-message {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #b00000;
+    border: 1px solid #ff6b6b;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    animation: fadeInDown 0.5s ease forwards;
+    opacity: 0;
+    z-index: 1000;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -15px);
+    }
+}
+
+/* MOBILE RESPONSIVE DESIGN */
+@media (max-width: 480px) {
+
+    .wrapper, .wrap,.wraps, .wrappers {
+        padding: 20px 25px;
+        max-width: 340px;
+        transform: scale(0.92);   /* shrinks the whole form a bit */
+    }
+
+    .wrapper, .wrappers h1 {
+        font-size: 28px;
+    }
+
+    .input-box {
+        margin: 20px 0;
+        height: 45px;
+    }
+
+    .input-box  input {
+        font-size: 14px;
+        padding: 15px 40px 15px 15px;
+        border-radius: 30px;
+    }
+    .wraps .input input {
+        font-size: 14px;
+        padding: 15px 40px 15px 15px;
+        border-radius: 30px;
+    }
+    .input-box label {
+        font-size: 14px;
+    }
+    .inputed input{
+        font-size: 14px;
+        padding: 15px 40px 15px 15px;
+        border-radius: 30px;
+    }
+    .input-box i {
+        margin-top: 12px;
+        font-size: 18px;
+        right: 15px;
+    }
+
+    .btn input {
+        height: 40px;
+        font-size: 15px;
+    }
+
+    .a p {
+        font-size: 12px;
+    }
+
+    footer.footer {
+        font-size: 0.75rem;
+        padding: 10px;
+        border-radius: 30px 30px 0 0;
+    }
+}
+
+
+.footer {
+    background-color: #a00000;
+    color: #fff;
+    text-align: center;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-size: 0.9rem;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
