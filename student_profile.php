@@ -8,6 +8,25 @@ if (!isset($_SESSION['submit'])){
 }
 
 $school_id = $_SESSION['school_id'];
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'students'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Count unread notifications
+$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
 $stmt = $con->prepare("SELECT * FROM student WHERE school_id = :school_id");
 $stmt->execute(['school_id' => $school_id]);

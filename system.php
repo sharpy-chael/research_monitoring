@@ -2,7 +2,7 @@
 include("connect.php");
 session_start();
 
-// Check if user is authorized (admin or coordinator only)
+// Check if user is authorized (admin only)
 if (!isset($_SESSION['submit'])) {
     header('Location: home.php');
     exit;
@@ -83,7 +83,11 @@ try {
 <body>
 
 <?php 
+if ($user_role === 'admin') {
     include("templates/aside_admin.html");
+} else {
+    include("templates/aside_coordinator.html");
+}
 ?>
 
 <main class="main-content">

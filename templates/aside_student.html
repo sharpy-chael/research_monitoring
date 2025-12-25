@@ -7,6 +7,13 @@
     <nav>
         <a href="index.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
         <a href="requirements.php"><i class="ri-clipboard-line"></i><span>Requirements</span></a>
+        <a href="#" id="notificationsBtn" class="notifications-link">
+            <i class="ri-notification-3-line"></i>
+            <span>Notifications</span>
+            <?php if (isset($unreadCount) && $unreadCount > 0): ?>
+                <span class="notification-badge-sidebar"><?= $unreadCount ?></span>
+            <?php endif; ?>
+        </a>
         <a href="documents.php"><i class="ri-download-line"></i><span>Download Documents</span></a>
         <a href="student_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
         <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
@@ -28,6 +35,13 @@
             <i class="ri-clipboard-line"></i>
             <span>Tasks</span>
         </a>
+        <a href="#" id="notificationsBtnMobile" data-page="notifications">
+            <i class="ri-notification-3-line"></i>
+            <span>Notifs</span>
+            <?php if (isset($unreadCount) && $unreadCount > 0): ?>
+                <span class="notification-badge-mobile"><?= $unreadCount ?></span>
+            <?php endif; ?>
+        </a>
         <a href="documents.php" data-page="documents">
             <i class="ri-download-line"></i>
             <span>Files</span>
@@ -36,12 +50,251 @@
             <i class="ri-user-line"></i>
             <span>Profile</span>
         </a>
-        <a href="home.php" data-page="home">
-            <i class="ri-logout-box-line"></i>
-            <span>Logout</span>
-        </a>
+        <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
     </nav>
 </div>
+
+<!-- Notifications Modal -->
+<div class="modal" id="notificationsModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content notifications-modal-content">
+        <button class="modal-close">&times;</button>
+        <h2>
+            <i class="ri-notification-3-line"></i>
+            Notifications
+        </h2>
+        
+        <div class="notifications-modal-body">
+            <?php if (isset($notifications) && !empty($notifications)): ?>
+                <?php foreach ($notifications as $notif): 
+                    $priorityClass = 'priority-' . strtolower($notif['priority']);
+                    $statusClass = $notif['status'] === 'sent' ? 'unread' : 'read';
+                ?>
+                    <div class="notification-card <?= $priorityClass ?> <?= $statusClass ?>">
+                        <div class="notification-header">
+                            <span class="notification-title">
+                                <?php if ($notif['status'] === 'sent'): ?>
+                                    <span class="new-badge">NEW</span>
+                                <?php endif; ?>
+                                <?= htmlspecialchars($notif['title']) ?>
+                            </span>
+                            <span class="notification-date">
+                                <?= date('M d, Y • h:i A', strtotime($notif['created_at'])) ?>
+                            </span>
+                        </div>
+                        <div class="notification-body">
+                            <?= nl2br(htmlspecialchars($notif['message'])) ?>
+                        </div>
+                        <?php if ($notif['status'] === 'sent'): ?>
+                            <button class="mark-read-btn" onclick="markAsRead(<?= $notif['id'] ?>)">
+                                <i class="ri-check-line"></i> Mark as Read
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="no-notifications-modal">
+                    <i class="ri-notification-off-line"></i>
+                    <p>No notifications yet</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Sidebar notification badge */
+.notifications-link {
+    position: relative;
+}
+
+.notification-badge-sidebar {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Mobile notification badge */
+.notification-badge-mobile {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.bottom-nav a {
+    position: relative;
+}
+
+/* Notifications Modal Styles */
+.notifications-modal-content {
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.notifications-modal-content h2 {
+    margin: 0 0 20px 0;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #333;
+}
+
+.notifications-modal-body {
+    overflow-y: auto;
+    max-height: calc(80vh - 100px);
+    padding-right: 10px;
+}
+
+.notification-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.3s;
+}
+
+.notification-card.unread {
+    background: #f0f8ff;
+    border-left: 4px solid #007bff;
+}
+
+.notification-card.read {
+    opacity: 0.7;
+}
+
+.notification-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+}
+
+.new-badge {
+    background: #dc3545;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.notification-date {
+    font-size: 12px;
+    color: #999;
+    white-space: nowrap;
+}
+
+.notification-body {
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.mark-read-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.3s;
+}
+
+.mark-read-btn:hover {
+    background: #0056b3;
+}
+
+.priority-high {
+    border-left-color: #dc3545 !important;
+}
+
+.priority-normal {
+    border-left-color: #007bff !important;
+}
+
+.priority-low {
+    border-left-color: #6c757d !important;
+}
+
+.no-notifications-modal {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.no-notifications-modal i {
+    font-size: 64px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.no-notifications-modal p {
+    font-size: 16px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .notifications-modal-content {
+        width: 95%;
+        max-height: 85vh;
+        margin: 307px 10px;
+    }
+    
+    .notification-header {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .notification-date {
+        font-size: 11px;
+    }
+}
+</style>
 
 <script>
 // Highlight active page in bottom navigation
@@ -57,5 +310,86 @@ document.addEventListener('DOMContentLoaded', function() {
             link.classList.add('active');
         }
     });
+    
+    // Notifications modal handlers
+    const notificationsModal = document.getElementById('notificationsModal');
+    const notificationsBtn = document.getElementById('notificationsBtn');
+    const notificationsBtnMobile = document.getElementById('notificationsBtnMobile');
+    
+    if (notificationsBtn) {
+        notificationsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            notificationsModal.classList.add('open');
+        });
+    }
+    
+    if (notificationsBtnMobile) {
+        notificationsBtnMobile.addEventListener('click', function(e) {
+            e.preventDefault();
+            notificationsModal.classList.add('open');
+        });
+    }
+    
+    // Close modal
+    const modalOverlay = notificationsModal.querySelector('.modal-overlay');
+    const modalClose = notificationsModal.querySelector('.modal-close');
+    
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', function() {
+            notificationsModal.classList.remove('open');
+        });
+    }
+    
+    if (modalClose) {
+        modalClose.addEventListener('click', function() {
+            notificationsModal.classList.remove('open');
+        });
+    }
 });
+
+// Mark notification as read
+async function markAsRead(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'mark_read');
+        formData.append('notification_id', notificationId);
+        
+        const response = await fetch('mark_notification_read.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update UI
+            const notifCard = event.target.closest('.notification-card');
+            notifCard.classList.remove('unread');
+            notifCard.classList.add('read');
+            event.target.remove();
+            
+            // Update badge count
+            const badge = document.querySelector('.notification-badge-sidebar');
+            const badgeMobile = document.querySelector('.notification-badge-mobile');
+            if (badge) {
+                let count = parseInt(badge.textContent) - 1;
+                if (count <= 0) {
+                    badge.remove();
+                } else {
+                    badge.textContent = count;
+                }
+            }
+            if (badgeMobile) {
+                let count = parseInt(badgeMobile.textContent) - 1;
+                if (count <= 0) {
+                    badgeMobile.remove();
+                } else {
+                    badgeMobile.textContent = count;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
 </script>

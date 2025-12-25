@@ -1,10 +1,11 @@
 <?php
 include("../connect.php");
+include('log_helper.php'); // Add logging
 session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['submit']) || !in_array($_SESSION['role'], ['admin', 'coordinator'])) {
+if (!isset($_SESSION['submit'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
@@ -43,6 +44,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         
+        // Convert empty string to NULL for integer field
+        if (empty($recipientId) || $recipientId === '') {
+            $recipientId = null;
+        } else {
+            $recipientId = (int)$recipientId; // Ensure it's an integer
+        }
+        
+        // Validate recipient type
+        if (!in_array($recipientType, ['all', 'students', 'advisors', 'coordinators', 'specific'])) {
+            echo json_encode(['success' => false, 'message' => 'Invalid recipient type']);
+            exit;
+        }
+        
+        // If specific user, recipient_id is required
+        if ($recipientType === 'specific' && $recipientId === null) {
+            echo json_encode(['success' => false, 'message' => 'User ID is required for specific user notifications']);
+            exit;
+        }
+        
         // Insert notification
         $stmt = $con->prepare("
             INSERT INTO system_notifications 
@@ -52,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $stmt->execute([
             'recipient_type' => $recipientType,
-            'recipient_id' => $recipientId,
+            'recipient_id' => $recipientId, // Now properly NULL or integer
             'title' => $title,
             'message' => $message,
             'priority' => $priority,
@@ -60,25 +80,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         
         // Log the action
-        $logStmt = $con->prepare("
-            INSERT INTO system_logs (user_id, user_type, action_type, description, ip_address)
-            VALUES (:user_id, :user_type, 'notification', :description, :ip_address)
-        ");
-        $logStmt->execute([
-            'user_id' => $user_id,
-            'user_type' => $_SESSION['role'],
-            'description' => "Sent notification to {$recipientType}: {$title}",
-            'ip_address' => $_SERVER['REMOTE_ADDR']
-        ]);
-        
-        // Here you could add logic to actually send emails or push notifications
-        // For now, we're just storing in the database
+        logActivity(
+            $con,
+            $user_id,
+            $_SESSION['role'],
+            'notification',
+            $_SESSION['name'] . " sent notification to {$recipientType}: {$title}"
+        );
         
         echo json_encode([
             'success' => true,
             'message' => 'Notification sent successfully'
         ]);
     } catch (PDOException $e) {
+        // Log the error
+        logError(
+            $con,
+            'notification_error',
+            $e->getMessage(),
+            __FILE__,
+            __LINE__,
+            $user_id
+        );
+        
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
     exit;

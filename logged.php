@@ -25,6 +25,10 @@ if (!empty($_POST['submit'])) {
         $_SESSION['id'] = $row['id'];
         $_SESSION['role'] = 'coordinator'; // Add this for authorization checks
         
+        include('php/log_helper.php');
+        logActivity($con, $_SESSION['id'], $_SESSION['role'], 'login', $_SESSION['name'] . ' logged in');
+
+
         if (!isset($_SESSION['from_portal']) || $_SESSION['from_portal'] !== true) {
             header('Location: portal.php');
             exit();

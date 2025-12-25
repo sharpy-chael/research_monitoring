@@ -57,6 +57,9 @@ function logError($con, $errorType, $errorMessage, $errorFile = '', $errorLine =
             VALUES (:error_type, :error_message, :error_file, :error_line, :user_id, :ip_address, :stack_trace)
         ");
         
+        // Convert stack trace to JSON string
+        $stackTrace = json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+        
         $stmt->execute([
             'error_type' => $errorType,
             'error_message' => $errorMessage,
@@ -64,7 +67,7 @@ function logError($con, $errorType, $errorMessage, $errorFile = '', $errorLine =
             'error_line' => $errorLine,
             'user_id' => $userId,
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
-            'stack_trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
+            'stack_trace' => $stackTrace
         ]);
         
         return true;
@@ -79,19 +82,24 @@ function logError($con, $errorType, $errorMessage, $errorFile = '', $errorLine =
  * Example usage in your existing files:
  * 
  * // In login.php after successful login:
+ * include('php/log_helper.php');
  * logActivity($con, $userId, $userType, 'login', 'User logged in successfully');
  * 
  * // In logout.php:
- * logActivity($con, $userId, $userType, 'logout', 'User logged out');
+ * include('php/log_helper.php');
+ * logActivity($con, $_SESSION['id'], $_SESSION['role'], 'logout', 'User logged out');
  * 
  * // In update_upload_status.php after approval:
+ * include('php/log_helper.php');
  * logActivity($con, $_SESSION['id'], $_SESSION['role'], 'approve', "Approved upload: {$uploadId}");
  * 
  * // In update_urec_status.php after rejection:
+ * include('php/log_helper.php');
  * logActivity($con, $_SESSION['id'], $_SESSION['role'], 'reject', "Rejected UREC document: {$documentId}");
  * 
  * // When catching errors:
  * catch (PDOException $e) {
+ *     include('php/log_helper.php');
  *     logError($con, 'database_error', $e->getMessage(), __FILE__, __LINE__, $userId);
  * }
  */

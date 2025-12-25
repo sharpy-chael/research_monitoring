@@ -448,7 +448,9 @@ table tbody tr:hover {
     background: #f8f9fa;
     border-color: #adb5bd;
 }
-
+.space{
+    height: 20px;
+}
 .btn-submit {
     padding: 10px 20px;
     border: none;
@@ -637,7 +639,8 @@ table tbody tr:hover {
     
     .recent-backups, .recent-logs {
         padding: 16px;
-        width: 80%;
+        width: 100%;
+        min-width: 200px;
     }
     
     .recent-backups h2, .recent-logs h2 {
@@ -727,7 +730,10 @@ table tbody tr:hover {
     .page-header h1 {
         font-size: 1.3rem;
     }
-    
+    .recent-backups, .recent-logs {
+        padding: 16px;
+        width: 100%;
+    }
     .stat-card .stat-info h3 {
         font-size: 1.3rem;
     }

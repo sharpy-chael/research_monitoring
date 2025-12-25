@@ -8,6 +8,22 @@ if (!isset($_SESSION['submit'])){
     exit;
 }
 $advisor_name = $_SESSION['name'] ?? '';
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'advisors'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (empty($advisor_name)) {
     header('Location: home.php');

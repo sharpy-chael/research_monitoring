@@ -4,7 +4,7 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['submit']) || !in_array($_SESSION['role'], ['admin', 'coordinator'])) {
+if (!isset($_SESSION['submit'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
@@ -33,8 +33,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $con->beginTransaction();
         
+        // First, get all boolean settings to handle unchecked checkboxes
+        $booleanSettings = [];
+        $stmt = $con->query("SELECT setting_key FROM system_settings WHERE setting_type = 'boolean'");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $booleanSettings[] = $row['setting_key'];
+        }
+        
+        // Set all boolean settings to 'false' first (for unchecked checkboxes)
+        foreach ($booleanSettings as $key) {
+            $updateStmt = $con->prepare("
+                UPDATE system_settings 
+                SET setting_value = 'false', updated_by = :updated_by, updated_at = NOW()
+                WHERE setting_key = :key
+            ");
+            $updateStmt->execute([
+                'updated_by' => $user_id,
+                'key' => $key
+            ]);
+        }
+        
         $updatedSettings = [];
         
+        // Now update with actual POST values
         foreach ($_POST as $key => $value) {
             // Check if setting exists
             $checkStmt = $con->prepare("SELECT setting_type FROM system_settings WHERE setting_key = :key");
@@ -42,9 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $setting = $checkStmt->fetch(PDO::FETCH_ASSOC);
             
             if ($setting) {
-                // Handle boolean values
+                // Handle boolean values - they come as 'true' or 'false' strings
                 if ($setting['setting_type'] === 'boolean') {
-                    $value = isset($_POST[$key]) ? 'true' : 'false';
+                    $value = ($value === 'true' || $value === '1' || $value === 'on') ? 'true' : 'false';
                 }
                 
                 // Update setting

@@ -1,13 +1,62 @@
 <?php
 include("connect.php");
 session_start();
+include('php/get_setting.php');
 
+// Check maintenance mode (only coordinators/admins can access)
+if (getSettingBool($con, 'maintenance_mode', false)) {
+    // Allow coordinators to access
+    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'coordinator') {
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Maintenance Mode</title>
+            <link rel="stylesheet" href="css/maintenance.css">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+        </head>
+        <body>
+            <div class="maintenance-box">
+                <i class="ri-tools-line"></i>
+                <h1>System Under Maintenance</h1>
+                <p>We're currently performing system maintenance.</p>
+                <p>Please check back later.</p>
+                <a href="home.php">Home</a>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+}
+include('check_session.php');
 if (!isset($_SESSION['submit'])) {
     header('Location: home.php');
     exit;
 }
 
 $school_id = $_SESSION['school_id'];
+
+// Fetch notifications for the current user
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'students'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Count unread notifications
+$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
 /* ===========================
    HANDLE TITLE SUBMISSION
@@ -222,6 +271,7 @@ $progressPercentage = round(($approvedCount / 6) * 100);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/notifications.css">
     <title>Student Page</title>
     <style>
         .modal {
@@ -381,7 +431,6 @@ $progressPercentage = round(($approvedCount / 6) * 100);
             </div>
         <?php endforeach; ?>
     </div>
-
     <div class="chart-wrapper">
         <div id="root" style="margin-top: 40px;"></div>
         <script type="module" src="./react-app/dist/assets/student-DV9ATBan.js" defer></script>
@@ -591,6 +640,6 @@ submitUploadBtn.addEventListener('click', async () => {
     }
 });
 </script>
-
+<script src="js/notifications.js"></script>
 </body>
 </html>

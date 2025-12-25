@@ -313,6 +313,14 @@ input[type="file"] {
     font-size: 22px;
     cursor: pointer;
 }
+.status-badge.status-disabled {
+    background: #e0e0e0;
+    color: #757575;
+}
+
+.add-btn.disabled i {
+    margin-right: 5px;
+}
 
 .modal-body {
     min-height: 120px;

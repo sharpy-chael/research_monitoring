@@ -4,7 +4,7 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['submit']) || !in_array($_SESSION['role'], ['admin', 'coordinator'])) {
+if (!isset($_SESSION['submit'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }

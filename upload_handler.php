@@ -1,5 +1,6 @@
 <?php
 include("connect.php");
+include('php/log_helper.php'); // Add this
 session_start();
 
 if (!isset($_SESSION['submit'])) {
@@ -39,6 +40,15 @@ if (move_uploaded_file($_FILES["file_upload"]["tmp_name"], $targetPath)) {
         ':file_path' => $targetPath,
         ':original_filename' => $originalName
     ]);
+
+    // Log the upload activity
+    logActivity(
+        $con,
+        $_SESSION['id'],
+        $_SESSION['role'],
+        'upload',
+        $_SESSION['name'] . " uploaded " . $task_name . " (" . $originalName . ")"
+    );
 
     header("Location: requirements.php?success=1");
     exit;

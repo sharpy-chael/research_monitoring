@@ -1,51 +1,223 @@
 <!-- Desktop Sidebar (hidden on mobile) -->
 <aside class="sidebar">
-    <div class="profile">
-        <i class="ri-user-3-fill"></i>
-        <h3>Advisor</h3>
-    </div>
-    <nav>
-        <a href="advisor.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
-        <a href="advisor_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
-        <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
-    </nav>
-    <div class="footer">
-        <i class='bx bx-copyright'></i>
-        <p>2025 Research Monitoring</p>
-    </div>
+
+<style>
+/* ===== NOTIFICATION MODAL ===== */
+.notif-link {
+    position: relative;
+}
+
+/* Badge */
+.notif-badge {
+    position: absolute;
+    top: 0;
+    right: 6px;
+    background: crimson;
+    color: #fff;
+    font-size: 11px;
+    padding: 3px 7px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+/* Overlay */
+.notif-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.notif-modal.active {
+    display: flex;
+}
+
+/* 🔥 BIGGER MODAL BOX */
+.notif-box {
+    background: #fff;
+    width: 600px;              /* increased width */
+    max-width: 95vw;
+    max-height: 80vh;          /* taller */
+    border-radius: 14px;
+    padding: 22px 24px;
+    overflow-y: auto;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.25);
+}
+
+/* Header */
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.notif-header h4 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.notif-close {
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.notif-close:hover {
+    opacity: 1;
+}
+
+/* Notification item */
+.notification-item {
+    background: #f7f7f7;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.notification-item strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.notification-item small {
+    display: block;
+    margin-top: 6px;
+    color: #777;
+    font-size: 12px;
+}
+
+/* Unread */
+.notification-item.unread {
+    border-left: 5px solid #007bff;
+    background: #eef5ff;
+}
+
+/* 📱 Mobile */
+@media (max-width: 600px) {
+    .notif-box {
+        width: 95vw;
+        max-height: 85vh;
+        padding: 18px;
+    }
+}
+</style>
+
+
+<div class="profile">
+    <i class="ri-user-3-fill"></i>
+    <h3>Advisor</h3>
+</div>
+
+<nav>
+    <a href="advisor.php">
+        <i class="ri-dashboard-line"></i><span>Dashboard</span>
+    </a>
+
+    <a href="advisor_profile.php">
+        <i class="ri-user-line"></i><span>Profile</span>
+    </a>
+
+    <!-- 🔔 DESKTOP NOTIFICATION -->
+    <a href="javascript:void(0)" id="openNotifDesktop" class="notif-link">
+        <i class="ri-notification-3-line"></i>
+        <span>Notifications</span>
+
+        <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
+            <span class="notif-badge" id="notifCount">
+                <?= $unreadCount ?>
+            </span>
+        <?php endif; ?>
+    </a>
+
+    <a href="home.php">
+        <i class="ri-logout-box-line"></i><span>Log Out</span>
+    </a>
+</nav>
+
+<div class="footer">
+    <p>2025 Research Monitoring</p>
+</div>
 </aside>
 
-<!-- Mobile Bottom Navigation (hidden on desktop) -->
+<!-- ===== NOTIFICATION MODAL ===== -->
+<div class="notif-modal" id="notifModal">
+    <div class="notif-box">
+        <div class="notif-header">
+            <h4>Notifications</h4>
+            <span class="notif-close" id="closeNotif">&times;</span>
+        </div>
+
+        <?php if (!empty($notifications)): ?>
+            <?php foreach ($notifications as $notif): ?>
+                <div class="notification-item <?= $notif['status'] === 'sent' ? 'unread' : '' ?>">
+                    <strong><?= htmlspecialchars($notif['title']) ?></strong>
+                    <div><?= htmlspecialchars($notif['message']) ?></div>
+                    <small><?= htmlspecialchars($notif['created_at']) ?></small>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p>No notifications</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- ===== MOBILE BOTTOM NAV ===== -->
 <div class="bottom-nav">
-    <nav>
-        <a href="advisor.php" data-page="advisor">
-            <i class="ri-dashboard-line"></i>
-            <span>Home</span>
-        </a>
-        <a href="advisor_profile.php" data-page="advisor_profile">
-            <i class="ri-user-line"></i>
-            <span>Profile</span>
-        </a>
-        <a href="home.php" data-page="home">
-            <i class="ri-logout-box-line"></i>
-            <span>Logout</span>
-        </a>
-    </nav>
+<nav>
+    <a href="advisor.php" data-page="advisor">
+        <i class="ri-dashboard-line"></i>
+        <span>Dashboard</span>
+    </a>
+
+    <!-- 🔔 MOBILE NOTIFICATION -->
+    <a href="javascript:void(0)" id="openNotifMobile">
+        <i class="ri-notification-3-line"></i>
+        <span>Notifications</span>
+    </a>
+
+    <a href="advisor_profile.php" data-page="advisor_profile">
+        <i class="ri-user-line"></i>
+        <span>Profile</span>
+    </a>
+
+    <a href="home.php" data-page="home">
+        <i class="ri-logout-box-line"></i>
+        <span>Logout</span>
+    </a>
+</nav>
 </div>
 
 <script>
-// Highlight active page in bottom navigation
 document.addEventListener('DOMContentLoaded', function() {
-    // Get current page filename
-    const currentPage = window.location.pathname.split('/').pop().replace('.php', '') || 'advisor';
-    
-    // Find and highlight the active link
-    const navLinks = document.querySelectorAll('.bottom-nav nav a');
-    navLinks.forEach(link => {
-        const pageName = link.getAttribute('data-page');
-        if (pageName === currentPage) {
+
+    /* ===== ACTIVE PAGE ===== */
+    const currentPage = window.location.pathname.split('/').pop().replace('.php','') || 'advisor';
+    document.querySelectorAll('.bottom-nav a').forEach(link => {
+        if (link.dataset.page === currentPage) {
             link.classList.add('active');
         }
+    });
+
+    /* ===== MODAL HANDLERS ===== */
+    const modal = document.getElementById('notifModal');
+    const openDesktop = document.getElementById('openNotifDesktop');
+    const openMobile = document.getElementById('openNotifMobile');
+    const closeBtn = document.getElementById('closeNotif');
+
+    openDesktop?.addEventListener('click', () => modal.classList.add('active'));
+    openMobile?.addEventListener('click', () => modal.classList.add('active'));
+    closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+
+    modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.remove('active');
     });
 });
 </script>

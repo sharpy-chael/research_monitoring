@@ -8,6 +8,25 @@ if (!isset($_SESSION['submit'])){
 }
 
 $school_id = $_SESSION['school_id'];
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'students'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Count unread notifications
+$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
 // Fetch student's group and adviser information
 $studentStmt = $con->prepare("
@@ -45,6 +64,22 @@ $thrustsStmt = $con->prepare("
 ");
 $thrustsStmt->execute(['group_id' => $group_id]);
 $assignedThrusts = $thrustsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Fetch enabled research statuses (to check if tasks are enabled by admin)
+$enabledStatusesStmt = $con->query("
+    SELECT name FROM research_statuses WHERE is_active = TRUE
+");
+$enabledStatuses = $enabledStatusesStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Map task names to research status names
+$taskStatusMap = [
+    "Chapter 1" => "Chapter 1-3",
+    "Chapter 2" => "Chapter 1-3",
+    "Chapter 3" => "Chapter 1-3",
+    "Chapter 4" => "Chapter 4-5",
+    "Chapter 5" => "Chapter 4-5",
+    "Final Research Output" => "Completed"
+];
 
 // Fetch uploads
 $uploadsStmt = $con->prepare("
@@ -94,6 +129,16 @@ foreach ($tasks as $task) {
     <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/requirements.css">
+    <style>
+        .status-badge.status-disabled {
+            background: #830000;
+            color: #ffffff;
+        }
+        
+        .add-btn.disabled i {
+            margin-right: 5px;
+        }
+    </style>
 </head>
 
 <body>
@@ -162,15 +207,24 @@ foreach ($tasks as $task) {
                 $statusText = 'Pending';
             }
 
-            $isActive = ($task === $activeTask);
+            // Check if this task's research status is enabled by admin
+            $taskResearchStatus = $taskStatusMap[$task] ?? null;
+            $isTaskEnabled = $taskResearchStatus && in_array($taskResearchStatus, $enabledStatuses);
+
+            $isActive = ($task === $activeTask) && $isTaskEnabled;
             $isApproved = ($status === 'approved');
+            $isDisabledByAdmin = !$isTaskEnabled;
         ?>
 
-        <div class="req-card <?= !$isActive && !$isApproved ? 'locked' : '' ?>">
+        <div class="req-card <?= (!$isActive && !$isApproved) || $isDisabledByAdmin ? 'locked' : '' ?>">
             <div class="req-header">
                 <span class="req-title-text"><?= $task ?></span>
 
-                <?php if ($isActive): ?>
+                <?php if ($isDisabledByAdmin): ?>
+                    <button class="add-btn disabled" disabled>
+                        <i class="ri-lock-line"></i> Disabled
+                    </button>
+                <?php elseif ($isActive): ?>
                     <button class="add-btn">+ Add Work</button>
                 <?php else: ?>
                     <button class="add-btn disabled" disabled>
@@ -184,7 +238,11 @@ foreach ($tasks as $task) {
                     <i class="ri-file-list-3-line"></i>
                     <span class="status-text">
                         Status:
-                        <span class="status-badge <?= $statusClass ?>"><?= $statusText ?></span>
+                        <?php if ($isDisabledByAdmin): ?>
+                            <span class="status-badge status-disabled">Disabled by Admin</span>
+                        <?php else: ?>
+                            <span class="status-badge <?= $statusClass ?>"><?= $statusText ?></span>
+                        <?php endif; ?>
                     </span>
                 </div>
 
@@ -196,7 +254,7 @@ foreach ($tasks as $task) {
                         Choose File
                         <input type="file"
                                name="file_upload"
-                               <?= $isActive ? '' : 'disabled' ?>
+                               <?= ($isActive && !$isDisabledByAdmin) ? '' : 'disabled' ?>
                                onchange="this.form.submit()">
                     </label>
 

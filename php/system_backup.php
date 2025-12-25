@@ -1,10 +1,11 @@
 <?php
 include("../connect.php");
+include('log_helper.php'); // Add logging
 session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['submit']) || !in_array($_SESSION['role'], ['admin', 'coordinator'])) {
+if (!isset($_SESSION['submit'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
@@ -37,32 +38,132 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Create backups directory if it doesn't exist
         $backupDir = '../backups/';
         if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0755, true);
+            if (!mkdir($backupDir, 0755, true)) {
+                echo json_encode(['success' => false, 'message' => 'Failed to create backups directory. Check permissions.']);
+                exit;
+            }
         }
         
-        // Get database credentials from connect.php
-        // Assuming you have these defined in connect.php
-        $dbHost = 'localhost'; // Update with your actual host
-        $dbName = 'research_monitoring'; // Update with your actual database name
-        $dbUser = 'postgres'; // Update with your actual username
-        $dbPass = 'pangitsiyulip'; // Update with your actual password
+        // Check if directory is writable
+        if (!is_writable($backupDir)) {
+            echo json_encode(['success' => false, 'message' => 'Backups directory is not writable. Check folder permissions.']);
+            exit;
+        }
+        
+        // Use credentials from connect.php
+        $dbHost = 'localhost';
+        $dbPort = '5432';
+        $dbName = 'research_monitoring';
+        $dbUser = 'postgres';
+        $dbPass = 'pangitsiyulip';
         
         $fileName = $backupName . '.sql';
         $filePath = $backupDir . $fileName;
         
-        // PostgreSQL backup command
-        $command = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -U %s -d %s > %s 2>&1',
-            escapeshellarg($dbPass),
-            escapeshellarg($dbHost),
-            escapeshellarg($dbUser),
-            escapeshellarg($dbName),
-            escapeshellarg($filePath)
-        );
+        // Detect operating system
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
         
+        // Find pg_dump
+        $pgDumpPath = null;
+        
+        if ($isWindows) {
+            // Windows paths
+            $possiblePaths = [
+                'C:\Program Files\PostgreSQL\16\bin\pg_dump.exe',
+                'C:\Program Files\PostgreSQL\15\bin\pg_dump.exe',
+                'C:\Program Files\PostgreSQL\14\bin\pg_dump.exe',
+                'C:\Program Files\PostgreSQL\13\bin\pg_dump.exe',
+                'C:\Program Files (x86)\PostgreSQL\16\bin\pg_dump.exe',
+                'C:\Program Files (x86)\PostgreSQL\15\bin\pg_dump.exe',
+            ];
+            
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path)) {
+                    $pgDumpPath = $path;
+                    break;
+                }
+            }
+            
+            if (!$pgDumpPath) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'pg_dump.exe not found. Please ensure PostgreSQL is installed. Checked paths: ' . implode(', ', $possiblePaths)
+                ]);
+                exit;
+            }
+        } else {
+            // Linux/Unix paths
+            $pgDumpPath = trim(shell_exec('which pg_dump 2>/dev/null'));
+            
+            if (empty($pgDumpPath)) {
+                $possiblePaths = [
+                    '/usr/bin/pg_dump',
+                    '/usr/local/bin/pg_dump',
+                    '/usr/pgsql-16/bin/pg_dump',
+                    '/usr/pgsql-15/bin/pg_dump',
+                ];
+                
+                foreach ($possiblePaths as $path) {
+                    if (file_exists($path)) {
+                        $pgDumpPath = $path;
+                        break;
+                    }
+                }
+            }
+            
+            if (empty($pgDumpPath)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'pg_dump command not found. Please install PostgreSQL client tools: sudo apt-get install postgresql-client'
+                ]);
+                exit;
+            }
+        }
+        
+        // Set PGPASSWORD environment variable (works on both Windows and Linux)
+        putenv("PGPASSWORD={$dbPass}");
+        
+        // Build command based on OS
+        if ($isWindows) {
+            $command = sprintf(
+                '"%s" -h %s -p %s -U %s -d %s -f "%s" 2>&1',
+                $pgDumpPath,
+                $dbHost,
+                $dbPort,
+                $dbUser,
+                $dbName,
+                $filePath
+            );
+        } else {
+            $command = sprintf(
+                '%s -h %s -p %s -U %s -d %s -f %s 2>&1',
+                escapeshellarg($pgDumpPath),
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                escapeshellarg($dbName),
+                escapeshellarg($filePath)
+            );
+        }
+        
+        // Execute command
         exec($command, $output, $returnVar);
         
-        if ($returnVar === 0 && file_exists($filePath)) {
+        // Clear password from environment
+        putenv("PGPASSWORD");
+        
+        // Debug info (remove in production)
+        $debugInfo = [
+            'command' => preg_replace('/PGPASSWORD=\S+/', 'PGPASSWORD=***', $command),
+            'return_code' => $returnVar,
+            'output' => $output,
+            'file_exists' => file_exists($filePath),
+            'file_size' => file_exists($filePath) ? filesize($filePath) : 0,
+            'pg_dump_path' => $pgDumpPath,
+        ];
+        
+        // Check if backup was successful
+        if ($returnVar === 0 && file_exists($filePath) && filesize($filePath) > 0) {
             $fileSize = filesize($filePath);
             
             // Save backup record to database
@@ -79,22 +180,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             // Log the action
-            $logStmt = $con->prepare("
-                INSERT INTO system_logs (user_id, user_type, action_type, description, ip_address)
-                VALUES (:user_id, :user_type, 'backup', :description, :ip_address)
-            ");
-            $logStmt->execute([
-                'user_id' => $user_id,
-                'user_type' => $_SESSION['role'],
-                'description' => 'Created database backup: ' . $fileName,
-                'ip_address' => $_SERVER['REMOTE_ADDR']
-            ]);
+            logActivity(
+                $con,
+                $user_id,
+                $_SESSION['role'],
+                'backup',
+                $_SESSION['name'] . ' created database backup: ' . $fileName . ' (' . round($fileSize / 1024 / 1024, 2) . ' MB)'
+            );
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Backup created successfully'
+                'message' => 'Backup created successfully (' . round($fileSize / 1024 / 1024, 2) . ' MB)'
             ]);
         } else {
+            // Backup failed - detailed error
+            $errorMessage = 'Backup failed. ';
+            
+            if (!file_exists($filePath)) {
+                $errorMessage .= 'File was not created. ';
+            } elseif (filesize($filePath) === 0) {
+                $errorMessage .= 'File is empty. ';
+                @unlink($filePath); // Delete empty file
+            }
+            
+            if ($returnVar !== 0) {
+                $errorMessage .= 'Return code: ' . $returnVar . '. ';
+            }
+            
+            if (!empty($output)) {
+                $errorMessage .= 'Output: ' . implode(' | ', $output);
+            }
+            
             // Save failed backup record
             $stmt = $con->prepare("
                 INSERT INTO database_backups (backup_name, file_path, backup_type, created_by, status, notes)
@@ -104,16 +220,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'backup_name' => $fileName,
                 'file_path' => $filePath,
                 'created_by' => $user_id,
-                'notes' => 'Backup failed: ' . implode("\n", $output)
+                'notes' => $errorMessage
             ]);
+            
+            // Log the error
+            logError(
+                $con,
+                'backup_failed',
+                $errorMessage . ' Debug: ' . json_encode($debugInfo),
+                __FILE__,
+                __LINE__,
+                $user_id
+            );
             
             echo json_encode([
                 'success' => false,
-                'message' => 'Backup failed. Please check server configuration.'
+                'message' => $errorMessage,
+                'debug' => $debugInfo // Remove this in production
             ]);
         }
     } catch (PDOException $e) {
+        logError($con, 'backup_error', $e->getMessage(), __FILE__, __LINE__, $user_id);
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -141,7 +271,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         
         // Delete file if exists
         if (file_exists($backup['file_path'])) {
-            unlink($backup['file_path']);
+            if (!unlink($backup['file_path'])) {
+                echo json_encode(['success' => false, 'message' => 'Failed to delete backup file']);
+                exit;
+            }
         }
         
         // Delete database record
@@ -149,16 +282,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $deleteStmt->execute(['id' => $backupId]);
         
         // Log the action
-        $logStmt = $con->prepare("
-            INSERT INTO system_logs (user_id, user_type, action_type, description, ip_address)
-            VALUES (:user_id, :user_type, 'delete', :description, :ip_address)
-        ");
-        $logStmt->execute([
-            'user_id' => $user_id,
-            'user_type' => $_SESSION['role'],
-            'description' => 'Deleted backup: ' . $backup['backup_name'],
-            'ip_address' => $_SERVER['REMOTE_ADDR']
-        ]);
+        logActivity(
+            $con,
+            $user_id,
+            $_SESSION['role'],
+            'delete',
+            $_SESSION['name'] . ' deleted backup: ' . $backup['backup_name']
+        );
         
         echo json_encode(['success' => true, 'message' => 'Backup deleted successfully']);
     } catch (PDOException $e) {

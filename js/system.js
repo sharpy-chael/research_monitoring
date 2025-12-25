@@ -71,6 +71,8 @@ function getIconForModal(title) {
 
 // Backup Modal
 function openBackupModal() {
+    const modalId = 'modal_' + Date.now();
+    
     const content = `
         <form id="backupForm" onsubmit="createBackup(event)">
             <div class="form-group">
@@ -92,7 +94,7 @@ function openBackupModal() {
         </form>
     `;
     
-    const modalId = createModal('Create Backup', content);
+    createModal('Create Backup', content);
 }
 
 async function createBackup(event) {
@@ -317,6 +319,8 @@ async function clearLogs() {
 
 // Notification Modal
 function openNotificationModal() {
+    const modalId = 'modal_' + Date.now();
+    
     const content = `
         <form id="notificationForm" onsubmit="sendNotification(event)">
             <div class="form-group">
@@ -358,7 +362,7 @@ function openNotificationModal() {
         </form>
     `;
     
-    const modalId = createModal('Send Notification', content);
+    createModal('Send Notification', content);
 }
 
 function toggleRecipientId() {
@@ -448,6 +452,8 @@ async function openSettingsModal() {
             return;
         }
         
+        const modalId = 'modal_' + Date.now();
+        
         let settingsHtml = '<form id="settingsForm" onsubmit="saveSettings(event)">';
         
         data.settings.forEach(setting => {
@@ -484,7 +490,7 @@ async function openSettingsModal() {
             </div>
         </form>`;
         
-        const modalId = createModal('System Settings', settingsHtml);
+        createModal('System Settings', settingsHtml);
     } catch (error) {
         showToast('Error loading settings: ' + error.message, 'error');
     }
@@ -494,6 +500,19 @@ async function saveSettings(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
+    
+    // IMPORTANT: Handle unchecked checkboxes
+    // Get all checkbox inputs in the form
+    const checkboxes = event.target.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        // If checkbox is not checked, explicitly add it as 'false'
+        if (!checkbox.checked) {
+            formData.append(checkbox.name, 'false');
+        } else {
+            // Make sure checked boxes are added as 'true'
+            formData.set(checkbox.name, 'true');
+        }
+    });
     
     try {
         const response = await fetch('php/system_settings.php', {
@@ -506,6 +525,12 @@ async function saveSettings(event) {
         if (data.success) {
             showToast(data.message, 'success');
             closeModal(event.target.closest('.modal').id);
+            
+            // If maintenance_mode was changed, reload the page after 2 seconds
+            if (formData.has('maintenance_mode')) {
+                showToast('Settings saved! Page will reload...', 'success');
+                setTimeout(() => location.reload(), 2000);
+            }
         } else {
             showToast(data.message, 'error');
         }

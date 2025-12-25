@@ -1,5 +1,6 @@
 <?php
 include("connect.php");
+include('php/log_helper.php'); // Add this
 session_start();
 
 // Set JSON header
@@ -33,6 +34,11 @@ if (!in_array($status, ['approved', 'rejected', 'pending'])) {
 }
 
 try {
+    // Get group info for logging
+    $infoStmt = $con->prepare("SELECT name, research_title FROM groups WHERE id = :group_id");
+    $infoStmt->execute(['group_id' => $group_id]);
+    $groupInfo = $infoStmt->fetch(PDO::FETCH_ASSOC);
+    
     // Update the title status for the group
     $stmt = $con->prepare("
         UPDATE groups 
@@ -46,6 +52,16 @@ try {
     ]);
     
     if ($stmt->rowCount() > 0) {
+        // Log the activity
+        $actionType = ($status === 'approved') ? 'approve' : 'reject';
+        logActivity(
+            $con,
+            $_SESSION['id'],
+            $_SESSION['role'],
+            $actionType,
+            $_SESSION['name'] . " {$status} research title for group: " . ($groupInfo['name'] ?? 'Unknown') . " - \"" . ($groupInfo['research_title'] ?? 'No title') . "\""
+        );
+        
         echo json_encode(['success' => true, 'message' => 'Status updated successfully']);
     } else {
         echo json_encode(['success' => false, 'message' => 'No changes made or group not found']);
