@@ -36,7 +36,8 @@ $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($row) {
     $_SESSION['images'] = $row['images'] ?? '';
-    $_SESSION['program'] = $row['program'] ?? ''; 
+    $_SESSION['program'] = $row['program'] ?? '';
+    $_SESSION['advisor_id'] = $row['advisor_id'] ?? '';
 }
 ?>
 
@@ -106,11 +107,11 @@ if ($row) {
     <div class="form-row">
       <div class="form-group">
         <label>Advisor ID</label>
-        <input type="text" id="displayAdvisorID" readonly>
+        <input type="text" id="displayAdvisorID" readonly value="<?php echo htmlspecialchars($row['advisor_id'] ?? ''); ?>">
       </div>
       <div class="form-group">
         <label>Department</label>
-        <input type="text" id="displayDepartment" readonly>
+        <input type="text" id="displayDepartment" readonly value="<?php echo htmlspecialchars($row['department'] ?? ''); ?>">
       </div>
     </div>
 
@@ -123,21 +124,21 @@ if ($row) {
     <span class="close-btn" onclick="closeModal()">&times;</span>
     <h2>Edit Personal Information</h2>
 
-    <form id="editForm" action="advisor_update.php" method="POST" enctype="multipart/form-data">
+    <form id="editForm" action="php/advisor_update.php" method="POST" enctype="multipart/form-data">
       <label>Full Name</label>
       <input type="text" name="name" value="<?php echo htmlspecialchars($_SESSION['name']); ?>" required>
 
       <label>Advisor ID</label>
-      <input type="text" id="advisorID" placeholder="Enter your Advisor ID">
+      <input type="text" name="advisor_id" id="advisorID" value="<?php echo htmlspecialchars($row['advisor_id'] ?? ''); ?>" readonly>
 
       <label>Department Advisee</label>
-      <input type="text" id="department" placeholder="Enter the Department" required>
+      <input type="text" name="department" id="department" value="<?php echo htmlspecialchars($row['department'] ?? ''); ?>" placeholder="Enter the Department" required>
 
       <label>Email</label>
-      <input type="email" id="email" placeholder="Enter your email" required>
+      <input type="email" name="email" id="email" value="<?php echo htmlspecialchars($row['email'] ?? ''); ?>" placeholder="Enter your email" required>
 
       <label>Address</label>
-      <input type="text" id="address" placeholder="Enter your Address" required>
+      <input type="text" name="address" id="address" value="<?php echo htmlspecialchars($row['address'] ?? ''); ?>" placeholder="Enter your Address" required>
 
       <label>Profile Picture</label>
       <input type="file" name="profile_image" id="newProfileImage">
@@ -157,7 +158,7 @@ if ($row) {
     <h2>Change Password</h2>
 
     <form id="changePasswordForm" method="POST">
-      <label>Password</label>
+      <label>Current Password</label>
       <input type="password" id="currentPassword" required>
 
       <label>New Password</label>

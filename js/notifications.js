@@ -5,7 +5,7 @@
 
 async function markAsRead(notificationId) {
     try {
-        const response = await fetch('mark_notification_read.php', {
+        const response = await fetch('php/mark_notification_read.php', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json' 

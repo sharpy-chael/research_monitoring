@@ -103,7 +103,7 @@ if ($user_role === 'admin') {
     <div class="stats-grid">
         <div class="stat-card blue">
             <div class="stat-icon">
-                <i class="ri-database-2-line"></i>
+                <i class="ri-database-2-line" style="color: white;"></i>
             </div>
             <div class="stat-info">
                 <h3><?= $dbSize ?></h3>
@@ -113,7 +113,7 @@ if ($user_role === 'admin') {
 
         <div class="stat-card green">
             <div class="stat-icon">
-                <i class="ri-save-line"></i>
+                <i class="ri-save-line" style="color: white;"></i>
             </div>
             <div class="stat-info">
                 <h3><?= $totalBackups ?></h3>
@@ -123,7 +123,7 @@ if ($user_role === 'admin') {
 
         <div class="stat-card purple">
             <div class="stat-icon">
-                <i class="ri-file-list-3-line"></i>
+                <i class="ri-file-list-3-line" style="color: white;"></i>
             </div>
             <div class="stat-info">
                 <h3><?= number_format($recentLogs) ?></h3>
@@ -133,7 +133,7 @@ if ($user_role === 'admin') {
 
         <div class="stat-card orange">
             <div class="stat-icon">
-                <i class="ri-error-warning-line"></i>
+                <i class="ri-error-warning-line" style="color: white;"></i>
             </div>
             <div class="stat-info">
                 <h3><?= $recentErrors ?></h3>

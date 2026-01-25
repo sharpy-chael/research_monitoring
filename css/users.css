@@ -59,12 +59,80 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 .section-header h2 {
     font-size: 24px;
     color: #2d3748;
     font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Search Bar Container */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.search-wrapper {
+    position: relative;
+    max-width: 300px;
+    flex: 1;
+}
+
+.search-wrapper input {
+    width: 100%;
+    padding: 10px 40px 10px 40px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.search-wrapper input:focus {
+    outline: none;
+    border-color: #a00000;
+    box-shadow: 0 0 0 3px rgba(160, 0, 0, 0.1);
+}
+
+.search-wrapper i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    font-size: 18px;
+}
+
+.search-wrapper .clear-search {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #718096;
+    font-size: 18px;
+    cursor: pointer;
+    display: none;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-wrapper .clear-search:hover {
+    color: #2d3748;
+}
+
+.search-wrapper .clear-search.show {
+    display: flex;
 }
 
 .btn-add {
@@ -80,6 +148,8 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .btn-add:hover {
@@ -138,8 +208,31 @@
     background: #f9fafb;
 }
 
+.users-table tbody tr.hidden {
+    display: none;
+}
+
 .users-table tbody tr:last-child td {
     border-bottom: none;
+}
+
+/* No Results Message */
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #718096;
+    font-size: 14px;
+    display: none;
+}
+
+.no-results.show {
+    display: block;
+}
+
+.no-results i {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #cbd5e0;
 }
 
 /* Status Badge */
@@ -315,6 +408,123 @@
     justify-content: flex-end;
 }
 
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+    font-size: 14px;
+}
+
+.toast-notification.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.toast-notification.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.toast-notification i {
+    font-size: 20px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast-notification.removing {
+    animation: slideOut 0.3s ease-in;
+}
+
+.confirm-modal {
+    display: none;
+}
+
+.confirm-modal.show {
+    display: flex;
+}
+
+.confirm-modal .modal-content {
+    max-width: 400px;
+    height: 200px;
+    margin: auto;
+}
+
+.confirm-modal .confirm-message {
+    margin: 20px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.confirm-modal .confirm-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.confirm-modal .btn-confirm {
+    padding: 10px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.confirm-modal .btn-confirm:hover {
+    background: #c82333;
+}
+
+.confirm-modal .btn-cancel {
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.confirm-modal .btn-cancel:hover {
+    background: #5a6268;
+}
+
+.confirm-modal h3 {
+    margin-top: 0;
+    color: #dc3545;
+}
+
 .btn-cancel,
 .btn-submit {
     padding: 10px 24px;
@@ -346,10 +556,31 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .header-actions {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    
+    .search-wrapper {
+        max-width: none;
+        order: 2;
+        width: 100%;
+    }
+    
+    .btn-add {
+        order: 1;
+    }
+}
+
 @media (max-width: 768px) {
     .tabs-container {
         overflow-x: auto;
         padding-bottom: 10px;
+    }
+    
+    .space {
+        height: 84px;
     }
     
     .tab-btn {
@@ -361,7 +592,21 @@
     .section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 15px;
+        gap: 12px;
+    }
+    
+    .section-header h2 {
+        width: 100%;
+    }
+    
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .search-wrapper {
+        width: 100%;
+        max-width: none;
     }
     
     .btn-add {
@@ -407,6 +652,15 @@
         font-size: 20px;
     }
     
+    .search-wrapper input {
+        font-size: 13px;
+        padding: 13px 35px;
+    }
+    
+    .search-wrapper i {
+        font-size: 16px;
+    }
+    
     .users-table {
         font-size: 12px;
     }
@@ -425,5 +679,11 @@
     .btn-toggle {
         padding: 6px 10px;
         font-size: 14px;
+    }
+    
+    .modal-content .modal-close {
+        text-align: end;
+        font-size: 26px;
+        font-weight: bolder;
     }
 }

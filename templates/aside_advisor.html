@@ -63,9 +63,10 @@
 
 .notif-close {
     cursor: pointer;
-    font-size: 22px;
+    font-size: 26px;
     line-height: 1;
-    opacity: 0.7;
+    opacity: 0.5;
+    font-weight: bolder;
 }
 
 .notif-close:hover {
@@ -117,15 +118,9 @@
 </div>
 
 <nav>
-    <a href="advisor.php">
-        <i class="ri-dashboard-line"></i><span>Dashboard</span>
-    </a>
-
-    <a href="advisor_profile.php">
-        <i class="ri-user-line"></i><span>Profile</span>
-    </a>
-
-    <!-- 🔔 DESKTOP NOTIFICATION -->
+    <a href="advisor.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+    <a href="advisees.php"><i class="ri-user-line"></i><span>Advisees</span></a>
+    <a href="advisor_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
     <a href="javascript:void(0)" id="openNotifDesktop" class="notif-link">
         <i class="ri-notification-3-line"></i>
         <span>Notifications</span>
@@ -136,25 +131,19 @@
             </span>
         <?php endif; ?>
     </a>
-
-    <a href="home.php">
-        <i class="ri-logout-box-line"></i><span>Log Out</span>
-    </a>
+    <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>
 </nav>
 
 <div class="footer">
     <p>2025 Research Monitoring</p>
 </div>
 </aside>
-
-<!-- ===== NOTIFICATION MODAL ===== -->
 <div class="notif-modal" id="notifModal">
     <div class="notif-box">
         <div class="notif-header">
             <h4>Notifications</h4>
             <span class="notif-close" id="closeNotif">&times;</span>
         </div>
-
         <?php if (!empty($notifications)): ?>
             <?php foreach ($notifications as $notif): ?>
                 <div class="notification-item <?= $notif['status'] === 'sent' ? 'unread' : '' ?>">
@@ -172,26 +161,13 @@
 <!-- ===== MOBILE BOTTOM NAV ===== -->
 <div class="bottom-nav">
 <nav>
-    <a href="advisor.php" data-page="advisor">
-        <i class="ri-dashboard-line"></i>
-        <span>Dashboard</span>
-    </a>
-
-    <!-- 🔔 MOBILE NOTIFICATION -->
-    <a href="javascript:void(0)" id="openNotifMobile">
-        <i class="ri-notification-3-line"></i>
-        <span>Notifications</span>
-    </a>
-
-    <a href="advisor_profile.php" data-page="advisor_profile">
-        <i class="ri-user-line"></i>
-        <span>Profile</span>
-    </a>
-
-    <a href="home.php" data-page="home">
-        <i class="ri-logout-box-line"></i>
-        <span>Logout</span>
-    </a>
+    <a href="advisor.php" data-page="advisor"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+    <a href="advisees.php" data-page="advisees"><i class="ri-user-line"></i><span>Advisees</span></a>
+    <a href="advisor_profile.php" data-page="advisor_profile"><i class="ri-user-line"></i><span>Profile</span></a>
+    <a href="javascript:void(0)" id="openNotifMobile"><i class="ri-notification-3-line"></i><span>Notifications</span></a>
+    
+   
+    <a href="home.php" data-page="home"><i class="ri-logout-box-line"></i><span>Logout</span></a>
 </nav>
 </div>
 

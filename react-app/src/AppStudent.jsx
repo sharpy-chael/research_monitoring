@@ -11,7 +11,8 @@ function AppStudent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/research_monitoring/get_student_data.php");
+        // FIXED: Correct path - data folder is at root level
+        const res = await fetch("/research_monitoring/data/get_student_data.php");
         
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

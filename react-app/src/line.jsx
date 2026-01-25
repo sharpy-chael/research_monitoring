@@ -4,8 +4,17 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export const LineGraph = ({ data }) => {
-  // Dynamic options based on data type
-  const isPercentage = data.datasets && data.datasets[0]?.label === "Progress";
+  // Determine chart type based on data structure
+  const isStudentView = !data.datasets && data.data;
+  const isAdvisorView = data.datasets && data.datasets.length > 0 && data.datasets[0]?.label !== "Approved" && data.datasets[0]?.label !== "Pending" && data.datasets[0]?.label !== "Rejected";
+  const isCoordinatorView = data.datasets && data.datasets.length > 0 && (
+    data.datasets.some(ds => ds.label === "Approved") ||
+    data.datasets.some(ds => ds.label === "Pending") ||
+    data.datasets.some(ds => ds.label === "Rejected")
+  );
+
+  // Check if this is percentage-based (student/advisor) or count-based (coordinator)
+  const isPercentage = isStudentView || isAdvisorView;
   
   const options = {
     responsive: true,
@@ -14,19 +23,35 @@ export const LineGraph = ({ data }) => {
       legend: { position: "top" },
       title: {
         display: true,
-        text: isPercentage ? "Research Progress Over Time" : "Submission Activity Over Time",
+        text: isStudentView 
+          ? "Research Progress Over Time" 
+          : isAdvisorView 
+            ? "Group Progress Comparison" 
+            : "Submission Activity Over Time",
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        ...(isPercentage && {
+        ...(isPercentage ? {
+          // Percentage scale for student/advisor
           min: 0,
           max: 100,
           ticks: {
             callback: function(value) {
               return value + '%';
-            }
+            },
+            stepSize: 10
+          }
+        } : {
+          // Count scale for coordinator - only show whole numbers
+          ticks: {
+            callback: function(value) {
+              if (Math.floor(value) === value) {
+                return value; // Only display if it's a whole number
+              }
+            },
+            stepSize: 1
           }
         })
       },

@@ -30,7 +30,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 
 // Fetch student's group and adviser information
 $studentStmt = $con->prepare("
-    SELECT s.group_id, a.name as adviser_name
+    SELECT s.group_id, s.is_leader, a.name as adviser_name, g.research_title, g.title_status
     FROM student s
     LEFT JOIN groups g ON s.group_id = g.id
     LEFT JOIN advisor a ON g.adviser_id = a.id
@@ -42,6 +42,64 @@ $studentInfo = $studentStmt->fetch(PDO::FETCH_ASSOC);
 
 $adviserName = $studentInfo && !empty($studentInfo['adviser_name']) ? $studentInfo['adviser_name'] : 'Adviser';
 $group_id = $studentInfo['group_id'];
+$is_leader = $studentInfo['is_leader'];
+$groupTitle = $studentInfo['research_title'] ?? '';
+$titleStatus = $studentInfo['title_status'] ?? 'missing';
+
+/* ===========================
+   GET UREC DOCUMENTS STATUS
+=========================== */
+$urecFormStatus = 'missing';
+$urecClearanceStatus = 'missing';
+
+if ($group_id) {
+    // Get latest UREC Form status
+    $urecFormStmt = $con->prepare("
+        SELECT status FROM urec_documents 
+        WHERE group_id = :group_id AND document_type = 'UREC Form'
+        ORDER BY uploaded_at DESC LIMIT 1
+    ");
+    $urecFormStmt->execute(['group_id' => $group_id]);
+    $urecForm = $urecFormStmt->fetch(PDO::FETCH_ASSOC);
+    if ($urecForm) {
+        $urecFormStatus = $urecForm['status'];
+    }
+
+    // Get latest UREC Clearance status
+    $urecClearanceStmt = $con->prepare("
+        SELECT status FROM urec_documents 
+        WHERE group_id = :group_id AND document_type = 'UREC Clearance'
+        ORDER BY uploaded_at DESC LIMIT 1
+    ");
+    $urecClearanceStmt->execute(['group_id' => $group_id]);
+    $urecClearance = $urecClearanceStmt->fetch(PDO::FETCH_ASSOC);
+    if ($urecClearance) {
+        $urecClearanceStatus = $urecClearance['status'];
+    }
+}
+
+/* ===========================
+   GET MILESTONE STATUSES
+=========================== */
+$proposalStatus = 'missing';
+$finalDefenseStatus = 'missing';
+$copyrightStatus = 'missing';
+
+if ($group_id) {
+    $milestoneStmt = $con->prepare("
+        SELECT proposal_status, final_defense_status, copyright_status
+        FROM group_milestones
+        WHERE group_id = :group_id
+    ");
+    $milestoneStmt->execute(['group_id' => $group_id]);
+    $milestone = $milestoneStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($milestone) {
+        $proposalStatus = ($milestone['proposal_status'] === 'completed') ? 'approved' : $milestone['proposal_status'];
+        $finalDefenseStatus = ($milestone['final_defense_status'] === 'completed') ? 'approved' : $milestone['final_defense_status'];
+        $copyrightStatus = ($milestone['copyright_status'] === 'completed') ? 'approved' : $milestone['copyright_status'];
+    }
+}
 
 // Fetch assigned SDGs for the group
 $sdgsStmt = $con->prepare("
@@ -129,6 +187,7 @@ foreach ($tasks as $task) {
     <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/requirements.css">
+    <link rel="stylesheet" href="css/notifications.css">
     <style>
         .status-badge.status-disabled {
             background: #830000;
@@ -136,6 +195,63 @@ foreach ($tasks as $task) {
         }
         
         .add-btn.disabled i {
+            margin-right: 5px;
+        }
+        
+        /* Milestone Cards Styles */
+        .milestone-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .milestone-cards {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .milestone-cards:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        }
+        
+        .milestone-cards h4 {
+            margin: 0 0 8px 0;
+            color: #8B0000;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .milestone-cards p {
+            margin: 0 0 12px 0;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .milestone-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #8B0000;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #8B0000;
+        }
+        
+        .read-only-note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 14px;
+        }
+        
+        .read-only-note i {
             margin-right: 5px;
         }
     </style>
@@ -148,6 +264,12 @@ foreach ($tasks as $task) {
 <div class="wrapper">
 
     <h1 class="req-title">Requirements</h1>
+
+    <!-- Read-Only Notice -->
+    <div class="read-only-note">
+        <i class="ri-information-line"></i>
+        <strong>Note:</strong> All milestone uploads are handled by your adviser. You can view the status here.
+    </div>
 
     <!-- SDGs and Thrusts Banner -->
     <?php if (!empty($assignedSdgs) || !empty($assignedThrusts)): ?>
@@ -185,6 +307,38 @@ foreach ($tasks as $task) {
         </div>
     </div>
     <?php endif; ?>
+
+    <!-- Milestone Cards Section -->
+    <h2 class="milestone-section-title"><i class="ri-flag-line"></i> Research Milestones</h2>
+    
+    <div class="milestone-status">
+        <?php
+        $progressItems = [
+            "Title" => ['status' => $titleStatus],
+            "Proposal" => ['status' => $proposalStatus],
+            "UREC Form" => ['status' => $urecFormStatus],
+            "UREC Clearance" => ['status' => $urecClearanceStatus],
+            "Final Defense" => ['status' => $finalDefenseStatus],
+            "Copyright / IP" => ['status' => $copyrightStatus]
+        ];
+        
+        foreach ($progressItems as $label => $data):
+            $statusClass = 'status-missing';
+            $statusText = 'Missing';
+            if ($data['status'] === 'pending') { $statusClass = 'status-pending'; $statusText = 'Pending'; }
+            elseif ($data['status'] === 'approved') { $statusClass = 'status-approved'; $statusText = 'Approved'; }
+            elseif ($data['status'] === 'rejected') { $statusClass = 'status-rejected'; $statusText = 'Rejected'; }
+        ?>
+            <div class="milestone-cards">
+                <h4><?= $label ?></h4>
+                <p>Status: <span class="status-badge <?= $statusClass ?>" id="<?= str_replace(' ', '', $label) ?>StatusBadge"><?= $statusText ?></span></p>
+                <!-- Students can no longer upload - adviser handles everything -->
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Chapter Requirements Section -->
+    <h2 class="milestone-section-title"><i class="ri-file-text-line"></i> Chapter Requirements</h2>
 
     <div class="req-container">
 
@@ -246,7 +400,7 @@ foreach ($tasks as $task) {
                     </span>
                 </div>
 
-                <form action="upload_handler.php" method="POST" enctype="multipart/form-data">
+                <form action="php/upload_handler.php" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="task_name" value="<?= $task ?>">
                     <input type="hidden" name="school_id" value="<?= $school_id ?>">
 
@@ -310,6 +464,7 @@ foreach ($tasks as $task) {
 </div>
 
 <script>
+// Comment Modal
 const modal = document.getElementById('commentModal');
 
 document.querySelectorAll('.add-comment').forEach(btn => {
@@ -344,6 +499,7 @@ document.querySelectorAll('.add-comment').forEach(btn => {
 modal.querySelector('.modal-overlay').onclick =
 modal.querySelector('.modal-close').onclick = () => modal.classList.remove('open');
 </script>
+<script src="js/notifications.js"></script>
 
 </body>
 </html>

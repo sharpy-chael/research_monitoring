@@ -4,8 +4,26 @@ include("connect.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     $name = $_POST['name'];
+    $advisorId = trim($_POST['advisor_id']);
     $password = $_POST['passw'];
 
+    // Validate advisor_id is not empty
+    if (empty($advisorId)) {
+        $_SESSION['error_message'] = "Advisor ID is required";
+        header("Location: signing.php");
+        exit();
+    }
+
+    // Check if advisor_id already exists
+    $checkStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE advisor_id = :advisor_id");
+    $checkStmt->execute(['advisor_id' => $advisorId]);
+    if ($checkStmt->fetch()) {
+        $_SESSION['error_message'] = "Advisor ID already exists. Please use a different ID.";
+        header("Location: signing.php");
+        exit();
+    }
+
+    // Password validation
     $uppercase = preg_match('@[A-Z]@', $password);
     $lowercase = preg_match('@[a-z]@', $password);
     $number = preg_match('@[0-9]@', $password);
@@ -17,19 +35,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
         header("Location: signing.php");
         exit();
     }
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $con->prepare("INSERT INTO advisor (name, pass_word) VALUES (:name, :password)");
+
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $con->prepare("INSERT INTO advisor (name, advisor_id, pass_word) VALUES (:name, :advisor_id, :password)");
 
     try {
         $stmt->execute([
             'name' => $name,
+            'advisor_id' => $advisorId,
             'password' => $hashed_password
         ]);
         $_SESSION['success_message'] = "Account created successfully!";
         header("Location: signing.php");
         exit();
     } catch (PDOException $e) {
-
         $_SESSION['error_message'] = "Error creating account: " . $e->getMessage();
         header("Location: signing.php");
         exit();
@@ -64,7 +83,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
             <form action="" method="post">
                 <div class="input-group">
                     <span class="icon"><i class="fa-solid fa-user"></i></span>
-                    <input type="text" name ="name" placeholder="Enter your name">
+                    <input type="text" name="name" placeholder="Enter your name" required>
+                </div>
+                <div class="input-group">
+                    <span class="icon"><i class="fa-solid fa-id-card"></i></span>
+                    <input type="text" name="advisor_id" placeholder="Enter Advisor ID" required>
                 </div>
                 <div class="input-group">
                     <span class="icon"><i class="fa-solid fa-lock"></i></span>

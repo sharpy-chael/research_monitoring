@@ -941,3 +941,16 @@
 #assignCheckboxes input[type="checkbox"] {
     margin-right: 8px;
 }
+@media (max-width: 480px) {
+    .modal-content button {
+        text-align: end;
+        font-size: 26px;
+        font-weight: bolder;
+    }
+    .student-card label {
+        font-size: 30px;
+    }
+    .manage-section h2 {
+        font-size: 20px;
+    }
+}

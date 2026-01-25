@@ -126,7 +126,7 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     const formData = new FormData(e.target);
     
     try {
-        const response = await fetch('manage_settings.php', {
+        const response = await fetch('php/manage_settings.php', {
             method: 'POST',
             body: formData
         });
@@ -154,7 +154,7 @@ async function toggleStatus(type, id, newStatus) {
     formData.append('is_active', newStatus);
     
     try {
-        const response = await fetch('manage_settings.php', {
+        const response = await fetch('php/manage_settings.php', {
             method: 'POST',
             body: formData
         });
@@ -186,7 +186,7 @@ async function setActiveAY(id, newStatus) {
     formData.append('is_active', newStatus);
     
     try {
-        const response = await fetch('manage_settings.php', {
+        const response = await fetch('php/manage_settings.php', {
             method: 'POST',
             body: formData
         });

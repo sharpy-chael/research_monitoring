@@ -22,7 +22,7 @@ document.getElementById("changePasswordForm")?.addEventListener("submit", async 
     message.style.display = "none";
 
     try {
-        const response = await fetch("change_password.php", {
+        const response = await fetch("php/change_password.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({

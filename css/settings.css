@@ -460,10 +460,31 @@
     .settings-table td {
         padding: 10px;
     }
+        .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* smooth scroll on mobile */
+    }
+
+    .settings-table {
+        min-width: 700px; /* force horizontal scroll */
+    }
 }
 
 @media (max-width: 480px) {
     .space{
         height: 80px;
     }
+    .modal-content .modal-close {
+        text-align: end;
+        font-size: 26px;
+        font-weight: bolder;
+    }
+    .section-header h2{
+        font-size: 20px;
+    }
+    .section-header .btn-add {
+        padding: 13px 16px;
+        font-size: 13px;
+        width: 50%;
+}
 }

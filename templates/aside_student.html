@@ -14,7 +14,7 @@
                 <span class="notification-badge-sidebar"><?= $unreadCount ?></span>
             <?php endif; ?>
         </a>
-        <a href="documents.php"><i class="ri-download-line"></i><span>Download Documents</span></a>
+        <!-- <a href="documents.php"><i class="ri-download-line"></i><span>Download Documents</span></a> -->
         <a href="student_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
         <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
     </nav>
@@ -27,14 +27,8 @@
 <!-- Mobile Bottom Navigation (hidden on desktop) -->
 <div class="bottom-nav">
     <nav>
-        <a href="index.php" data-page="index">
-            <i class="ri-dashboard-line"></i>
-            <span>Home</span>
-        </a>
-        <a href="requirements.php" data-page="requirements">
-            <i class="ri-clipboard-line"></i>
-            <span>Tasks</span>
-        </a>
+        <a href="index.php" data-page="index"><i class="ri-dashboard-line"></i><span>Home</span></a>
+        <a href="requirements.php" data-page="requirements"><i class="ri-clipboard-line"></i><span>Tasks</span></a>
         <a href="#" id="notificationsBtnMobile" data-page="notifications">
             <i class="ri-notification-3-line"></i>
             <span>Notifs</span>
@@ -42,14 +36,8 @@
                 <span class="notification-badge-mobile"><?= $unreadCount ?></span>
             <?php endif; ?>
         </a>
-        <a href="documents.php" data-page="documents">
-            <i class="ri-download-line"></i>
-            <span>Files</span>
-        </a>
-        <a href="student_profile.php" data-page="student_profile">
-            <i class="ri-user-line"></i>
-            <span>Profile</span>
-        </a>
+        <!-- <a href="documents.php" data-page="documents"><i class="ri-download-line"></i><span>Files</span></a> -->
+        <a href="student_profile.php" data-page="student_profile"><i class="ri-user-line"></i><span>Profile</span></a>
         <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>   
     </nav>
 </div>
@@ -282,7 +270,7 @@
     .notifications-modal-content {
         width: 95%;
         max-height: 85vh;
-        margin: 307px 10px;
+        margin: 74% auto;
     }
     
     .notification-header {

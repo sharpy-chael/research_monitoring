@@ -5,11 +5,12 @@ include "connect.php";
 
 if (!empty($_POST['submit'])) {
     $_SESSION['submit'] = $_POST['submit'];
-    $name = $_POST['name'];
+    $name = trim($_POST['name']);
+    $advisorId = trim($_POST['advisor_id']);
     $password = $_POST['password'];
 
-    $stmt = $con->prepare("SELECT * FROM advisor WHERE name = :name");
-    $stmt->execute(['name' => $name]);
+    $stmt = $con->prepare("SELECT * FROM advisor WHERE name = :name AND advisor_id = :advisor_id");
+    $stmt->execute(['name' => $name, 'advisor_id' => $advisorId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row && password_verify($password, $row['pass_word'])) {
@@ -22,12 +23,12 @@ if (!empty($_POST['submit'])) {
         
         $_SESSION['name'] = $row['name'];
         $_SESSION['id'] = $row['id'];
+        $_SESSION['advisor_id'] = $row['advisor_id'];
         $_SESSION['images'] = $row['images'];
         $_SESSION['role'] = 'advisor';
 
         include('php/log_helper.php');
         logActivity($con, $_SESSION['id'], $_SESSION['role'], 'login', $_SESSION['name'] . ' logged in');
-
 
         if (!isset($_SESSION['from_portal']) || $_SESSION['from_portal'] !== true) {
             header('Location: portal.php');
@@ -37,13 +38,12 @@ if (!empty($_POST['submit'])) {
         header("Location: advisor.php");
         exit;
     } else {
-        $_SESSION['error_message'] = "Incorrect Info or User doesn't exist";
+        $_SESSION['error_message'] = "Incorrect Name, Advisor ID, or Password";
         header("Location: loginn.php");
         exit;
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -54,7 +54,6 @@ if (!empty($_POST['submit'])) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
-
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <title>Advisor Log In</title>
 </head>
@@ -64,24 +63,29 @@ if (!empty($_POST['submit'])) {
         <?php unset($_SESSION['error_message']); ?>
     <?php endif; ?>
     <div class="wrap">
-         <a href="portal.php"><i class='bx  bxs-arrow-left-stroke'  ></i></a>
+         <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
             <form action="" method="post">
                 <h1>Log In Form</h1>
                 <div class="inputed">
-                    <label for="Advisor">Advisor</label>
-                    <input type="text" name="name" placeholder="Name">
-                    <i class='bxr  bx-user'  ></i>
+                    <label for="name">Name</label>
+                    <input type="text" name="name" placeholder="Name" required>
+                    <i class='bxr bx-user'></i>
+                </div>
+                <div class="inputed">
+                    <label for="advisor_id">Advisor ID</label>
+                    <input type="text" name="advisor_id" placeholder="Advisor ID" required>
+                    <i class='bxr  bx-user-id-card'></i> 
                 </div>
                 <div class="inputed">
                     <label for="password">Password</label>
-                    <input type="password" name="password" placeholder="Password">
-                    <i class='bxr  bx-lock'  ></i>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <i class='bxr bx-lock'></i>
                 </div>
                 <div class="btn">
                     <input type="submit" name="submit" value="Log In">
                 </div>
                 <div class="a">
-                    <p>Dont have an account yet? <a href="signing.php">Sign up</a></p>
+                    <p>Don't have an account yet? <a href="signing.php">Sign up</a></p>
                 </div>     
             </form>
         </div>

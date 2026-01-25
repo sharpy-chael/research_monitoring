@@ -5,7 +5,6 @@
         <h3>Administrator</h3>
     </div>
     <nav>
-        <!-- <a href="admin.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a> -->
         <a href="users.php"><i class="ri-clipboard-line"></i><span>Manage Users</span></a>
         <a href="settings.php"><i class="ri-download-line"></i><span>Academic Setting</span></a>
         <a href="system.php"><i class="ri-user-line"></i><span>System Maintenance</span></a>
@@ -17,22 +16,18 @@
     </div>
 </aside>
 
-<!-- Mobile Bottom Navigation (hidden on desktop) -->
+
 <div class="bottom-nav">
     <nav>
-        <!-- <a href="admin.php" data-page="admin">
-            <i class="ri-dashboard-line"></i>
-            <span>Home</span>
-        </a> -->
-        <a href="users.php" data-page="manage_users">
+        <a href="users.php" data-page="users">
             <i class="ri-clipboard-line"></i>
             <span>Users</span>
         </a>
-        <a href="settings.php" data-page="academic_setting">
+        <a href="settings.php" data-page="settings">
             <i class="ri-download-line"></i>
             <span>Settings</span>
         </a>
-        <a href="system.php" data-page="system_maintenance">
+        <a href="system.php" data-page="system">
             <i class="ri-user-line"></i>
             <span>System</span>
         </a>
@@ -47,14 +42,18 @@
 // Highlight active page in bottom navigation
 document.addEventListener('DOMContentLoaded', function() {
     // Get current page filename
-    const currentPage = window.location.pathname.split('/').pop().replace('.php', '') || 'admin';
+    const currentPage = window.location.pathname.split('/').pop().replace('.php', '') || 'users';
+    
+    console.log('Current page:', currentPage); // Debug log
     
     // Find and highlight the active link
     const navLinks = document.querySelectorAll('.bottom-nav nav a');
     navLinks.forEach(link => {
         const pageName = link.getAttribute('data-page');
+        console.log('Checking:', pageName, 'against', currentPage); // Debug log
         if (pageName === currentPage) {
             link.classList.add('active');
+            console.log('Active link found:', pageName); // Debug log
         }
     });
 });

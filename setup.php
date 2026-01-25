@@ -53,6 +53,26 @@ $thrustQuery = $con->query("
     ORDER BY group_count DESC
 ");
 $thrustData = $thrustQuery->fetchAll(PDO::FETCH_ASSOC);
+
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'coordinators'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Count unread notifications
+$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,12 +89,12 @@ $thrustData = $thrustQuery->fetchAll(PDO::FETCH_ASSOC);
     <?php include("templates/aside_coordinator.html"); ?>
     
     <main class="main-content">
-        <h1><i class="ri-file-chart-line"></i> Monitoring Reports</h1>
+        <h1 style="color: #a00000;"><i class="ri-file-chart-line"></i> Monitoring Reports</h1>
         
         <!-- Summary Dashboard -->
         <div class="summary-cards">
             <div class="stat-card">
-                <div class="stat-icon"><i class="ri-team-line"></i></div>
+                <div class="stat-icon"><i class="ri-team-line" style="color: #ffffff;"></i></div>
                 <div class="stat-content">
                     <div class="stat-number"><?= $stats['total_groups'] ?></div>
                     <div class="stat-label">Total Groups</div>
@@ -82,7 +102,7 @@ $thrustData = $thrustQuery->fetchAll(PDO::FETCH_ASSOC);
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon"><i class="ri-user-line"></i></div>
+                <div class="stat-icon"><i class="ri-user-line" style="color: #ffffff;"></i></div>
                 <div class="stat-content">
                     <div class="stat-number"><?= $stats['total_students'] ?></div>
                     <div class="stat-label">Total Students</div>
@@ -90,7 +110,7 @@ $thrustData = $thrustQuery->fetchAll(PDO::FETCH_ASSOC);
             </div>
             
             <div class="stat-card">
-                <div class="stat-icon"><i class="ri-user-star-line"></i></div>
+                <div class="stat-icon"><i class="ri-user-star-line" style="color: #ffffff;"></i></div>
                 <div class="stat-content">
                     <div class="stat-number"><?= $stats['total_advisors'] ?></div>
                     <div class="stat-label">Total Advisors</div>
@@ -201,7 +221,7 @@ $thrustData = $thrustQuery->fetchAll(PDO::FETCH_ASSOC);
     <script>
     async function exportReport(type) {
         try {
-            const response = await fetch('export_report.php', {
+            const response = await fetch('php/export_report.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `type=${type}`

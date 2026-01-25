@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                 <div class="a">
                     <p class="login-link">Go back to <a href="log_in.php">Log In</a></p>
                 </div>
-                <p style="font-size: 10px;">Password should have at least 8 characters, a capital letter, a number, and a special character.</p>
+                <p style="font-size: 10px;">Password should have at least 8 characters.</p>
             </form> 
         </div>
     </div>

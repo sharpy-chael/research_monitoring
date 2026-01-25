@@ -10,7 +10,8 @@ function AppCoordinator() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost/research_monitoring/get_coordinator_data.php");
+        // FIXED: Correct path - data folder is at root level
+        const res = await fetch("/research_monitoring/data/get_coordinator_data.php");
         const data = await res.json();
         
         setChartData(data);

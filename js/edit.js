@@ -12,7 +12,7 @@ function addStudentsFromModal() {
     const newGroup = document.getElementById('modalNewGroup').value.trim();
     if (!ids && !newGroup) return;
 
-    fetch('add_student.php', {
+    fetch('php/add_student.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ school_ids: ids, group_id: group_id, new_group: newGroup })
@@ -47,7 +47,7 @@ function toggleMembers(el) {
 function deleteMember(studentId, el) {
     if (!confirm('Delete this member?')) return;
 
-    fetch('add_student.php', {
+    fetch('php/add_student.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: studentId, delete_student: true })
@@ -63,7 +63,7 @@ function promptAddMember(groupId) {
     const schoolId = prompt('Enter student school ID(s), comma-separated:');
     if (!schoolId) return;
 
-    fetch('add_student.php', {
+    fetch('php/add_student.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ school_ids: schoolId, group_id: groupId })
@@ -78,7 +78,7 @@ function promptAddMember(groupId) {
 function deleteGroup(groupId, el) {
     if (!confirm('Are you sure you want to delete this group?')) return;
 
-    fetch('add_student.php', {
+    fetch('php/add_student.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delete_group_id: groupId })
@@ -94,7 +94,6 @@ const editBtn = document.getElementById("editToggle");
 const editModal = document.getElementById("editModal");
 const cancelEdit = document.getElementById("cancelEdit");
 
-const advisorIDInput = document.getElementById("advisorID");
 const departmentInput = document.getElementById("department");
 const emailInput = document.getElementById("email");
 const addressInput = document.getElementById("address");
@@ -110,12 +109,10 @@ if (editBtn) {
 
         const emailDisplay = document.getElementById("displayEmail");
         const addressDisplay = document.getElementById("displayAddress");
-        const advisorDisplay = document.getElementById("displayAdvisorID");
         const departmentDisplay = document.getElementById("displayDepartment");
 
         if (emailInput) emailInput.value = localStorage.getItem(key("studentEmail")) || emailDisplay?.value || "";
         if (addressInput) addressInput.value = localStorage.getItem(key("studentAddress")) || addressDisplay?.value || "";
-        if (advisorIDInput) advisorIDInput.value = localStorage.getItem(key("advisorID")) || advisorDisplay?.value || "";
         if (departmentInput) departmentInput.value = localStorage.getItem(key("advisorDepartment")) || departmentDisplay?.value || "";
     });
 }
@@ -131,15 +128,10 @@ window.addEventListener("click", (e) => {
 const genderRadios = document.querySelectorAll('input[name="gender"]');
 
 window.addEventListener("DOMContentLoaded", () => {
-    const advisorDisplay = document.getElementById("displayAdvisorID");
     const departmentDisplay = document.getElementById("displayDepartment");
 
-    const savedAdvisorID = localStorage.getItem(key("advisorID"));
     const savedDepartment = localStorage.getItem(key("advisorDepartment"));
 
-    if (advisorDisplay && savedAdvisorID !== null) {
-        advisorDisplay.value = savedAdvisorID;
-    }
     if (departmentDisplay && savedDepartment !== null) {
         departmentDisplay.value = savedDepartment;
     }
@@ -174,17 +166,14 @@ if (editForm) {
         try {
             if (emailInput) localStorage.setItem(key("studentEmail"), emailInput.value.trim());
             if (addressInput) localStorage.setItem(key("studentAddress"), addressInput.value.trim());
-            if (advisorIDInput) localStorage.setItem(key("advisorID"), advisorIDInput.value.trim());
             if (departmentInput) localStorage.setItem(key("advisorDepartment"), departmentInput.value.trim());
 
             const emailDisplay = document.getElementById("displayEmail");
             const addressDisplay = document.getElementById("displayAddress");
-            const advisorDisplay = document.getElementById("displayAdvisorID");
             const departmentDisplay = document.getElementById("displayDepartment");
 
             if (emailDisplay) emailDisplay.value = emailInput.value.trim();
             if (addressDisplay) addressDisplay.value = addressInput.value.trim();
-            if (advisorDisplay) advisorDisplay.value = advisorIDInput.value.trim();
             if (departmentDisplay) departmentDisplay.value = departmentInput.value.trim();
 
             showGlobalMessage("success", "Personal Info Updated Successfully");
@@ -257,7 +246,7 @@ function submitGroupAssignment(){
     const groupId   = document.getElementById("modalGroupSelect").value;
     const newGroup  = document.getElementById("modalNewGroup").value;
 
-    fetch("assign_group_roles.php", {
+    fetch("php/assign_group_roles.php", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body:
@@ -277,5 +266,3 @@ function submitGroupAssignment(){
         }
     });
 }
-
-

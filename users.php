@@ -16,10 +16,10 @@ $students = $con->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $advisors = $con->query("
-    SELECT a.id, a.name, a.is_active, COUNT(g.id) as group_count
+    SELECT a.id, a.name, a.advisor_id, a.is_active, COUNT(g.id) as group_count
     FROM advisor a
-    LEFT JOIN groups g ON a.id = g.adviser_id
-    GROUP BY a.id, a.name, a.is_active
+    LEFT JOIN groups g ON CAST(a.advisor_id AS VARCHAR) = CAST(g.advisor_id AS VARCHAR)
+    GROUP BY a.id, a.name, a.advisor_id, a.is_active
     ORDER BY a.name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -42,124 +42,6 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/users.css">
     <title>User Management</title>
-    <style>
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 300px;
-            animation: slideIn 0.3s ease-out;
-            font-size: 14px;
-        }
-
-        .toast-notification.success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-
-        .toast-notification.error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-
-        .toast-notification i {
-            font-size: 20px;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-
-        .toast-notification.removing {
-            animation: slideOut 0.3s ease-in;
-        }
-
-        .confirm-modal {
-            display: none;
-        }
-
-        .confirm-modal.show {
-            display: flex;
-        }
-
-        .confirm-modal .modal-content {
-            max-width: 400px;
-            height: 200px;
-            margin: auto;
-        }
-
-        .confirm-modal .confirm-message {
-            margin: 20px 0;
-            font-size: 16px;
-            color: #333;
-        }
-
-        .confirm-modal .confirm-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .confirm-modal .btn-confirm {
-            padding: 10px 20px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .confirm-modal .btn-confirm:hover {
-            background: #c82333;
-        }
-
-        .confirm-modal .btn-cancel {
-            padding: 10px 20px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .confirm-modal .btn-cancel:hover {
-            background: #5a6268;
-        }
-
-        .confirm-modal h3 {
-            margin-top: 0;
-            color: #dc3545;
-        }
-    </style>
 </head>
 <body>
     <?php include("templates/aside_admin.html"); ?>
@@ -184,13 +66,22 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
         <div id="students-tab" class="tab-content active">
             <div class="section-header">
                 <h2>Student Accounts</h2>
-                <button class="btn-add" onclick="openModal('student')">
-                    <i class="ri-user-add-line"></i> Add Student
-                </button>
+                <div class="header-actions">
+                    <div class="search-wrapper">
+                        <i class="ri-search-line"></i>
+                        <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="searchTable('student')">
+                        <button class="clear-search" id="clearStudentSearch" onclick="clearSearch('student')">
+                            <i class="ri-close-line"></i>
+                        </button>
+                    </div>
+                    <button class="btn-add" onclick="openModal('student')">
+                        <i class="ri-user-add-line"></i> Add Student
+                    </button>
+                </div>
             </div>
             
             <div class="table-wrapper">
-                <table class="users-table">
+                <table class="users-table" id="studentTable">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -225,6 +116,10 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <div class="no-results" id="studentNoResults">
+                    <i class="ri-search-line"></i>
+                    <p>No students found</p>
+                </div>
             </div>
         </div>
 
@@ -232,16 +127,26 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
         <div id="advisors-tab" class="tab-content">
             <div class="section-header">
                 <h2>Advisor Accounts</h2>
-                <button class="btn-add" onclick="openModal('advisor')">
-                    <i class="ri-user-add-line"></i> Add Advisor
-                </button>
+                <div class="header-actions">
+                    <div class="search-wrapper">
+                        <i class="ri-search-line"></i>
+                        <input type="text" id="advisorSearch" placeholder="Search advisors..." onkeyup="searchTable('advisor')">
+                        <button class="clear-search" id="clearAdvisorSearch" onclick="clearSearch('advisor')">
+                            <i class="ri-close-line"></i>
+                        </button>
+                    </div>
+                    <button class="btn-add" onclick="openModal('advisor')">
+                        <i class="ri-user-add-line"></i> Add Advisor
+                    </button>
+                </div>
             </div>
             
             <div class="table-wrapper">
-                <table class="users-table">
+                <table class="users-table" id="advisorTable">
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Advisor ID</th>
                             <th>Assigned Groups</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -251,6 +156,7 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
                         <?php foreach ($advisors as $advisor): ?>
                             <tr class="<?= $advisor['is_active'] ? '' : 'inactive-row' ?>">
                                 <td><?= htmlspecialchars($advisor['name']) ?></td>
+                                <td><?= htmlspecialchars($advisor['advisor_id'] ?? 'N/A') ?></td>
                                 <td><?= $advisor['group_count'] ?> groups</td>
                                 <td>
                                     <span class="status-badge <?= $advisor['is_active'] ? 'active' : 'inactive' ?>">
@@ -269,6 +175,10 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <div class="no-results" id="advisorNoResults">
+                    <i class="ri-search-line"></i>
+                    <p>No advisors found</p>
+                </div>
             </div>
         </div>
 
@@ -313,6 +223,7 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
                 </table>
             </div>
         </div>
+        <div class="space"></div>
     </main>
 
     <!-- User Modal -->
@@ -330,6 +241,11 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
                 <div class="form-group">
                     <label>Name <span class="required">*</span></label>
                     <input type="text" id="userName" name="name" required>
+                </div>
+                
+                <div class="form-group" id="advisorIdGroup">
+                    <label>Advisor ID <span class="required">*</span></label>
+                    <input type="text" id="advisorId" name="advisor_id">
                 </div>
                 
                 <div class="form-group" id="schoolIdGroup">
@@ -379,7 +295,6 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
             </div>
         </div>
     </div>
-
     <script src="js/timeout.js"></script>
     <script>
     let pendingToggle = null;
@@ -420,12 +335,18 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
         document.getElementById('formAction').value = 'create';
         
         // Show/hide fields based on user type
+        document.getElementById('advisorIdGroup').style.display = type === 'advisor' ? 'block' : 'none';
         document.getElementById('schoolIdGroup').style.display = type === 'student' ? 'block' : 'none';
         document.getElementById('programGroup').style.display = type === 'student' ? 'block' : 'none';
         document.getElementById('groupGroup').style.display = type === 'student' ? 'block' : 'none';
         document.getElementById('passwordHint').style.display = 'none';
         document.getElementById('passwordRequired').style.display = 'inline';
         document.getElementById('password').required = true;
+        
+        // Set required for advisor_id when adding advisor
+        if (type === 'advisor') {
+            document.getElementById('advisorId').required = true;
+        }
     }
 
     function editUser(type, user) {
@@ -442,7 +363,16 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
             document.getElementById('schoolIdGroup').style.display = 'block';
             document.getElementById('programGroup').style.display = 'block';
             document.getElementById('groupGroup').style.display = 'block';
+            document.getElementById('advisorIdGroup').style.display = 'none';
+        } else if (type === 'advisor') {
+            document.getElementById('advisorId').value = user.advisor_id || '';
+            document.getElementById('advisorIdGroup').style.display = 'block';
+            document.getElementById('schoolIdGroup').style.display = 'none';
+            document.getElementById('programGroup').style.display = 'none';
+            document.getElementById('groupGroup').style.display = 'none';
+            document.getElementById('advisorId').required = false;
         } else {
+            document.getElementById('advisorIdGroup').style.display = 'none';
             document.getElementById('schoolIdGroup').style.display = 'none';
             document.getElementById('programGroup').style.display = 'none';
             document.getElementById('groupGroup').style.display = 'none';
@@ -485,7 +415,7 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
         formData.append('is_active', newStatus);
         
         try {
-            const response = await fetch('manage_user.php', {
+            const response = await fetch('php/manage_user.php', {
                 method: 'POST',
                 body: formData
             });
@@ -512,7 +442,7 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
         const formData = new FormData(e.target);
         
         try {
-            const response = await fetch('manage_user.php', {
+            const response = await fetch('php/manage_user.php', {
                 method: 'POST',
                 body: formData
             });
@@ -530,6 +460,65 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
             showToast('Error: ' + error.message, 'error');
         }
     });
+
+    // Search functionality
+    function searchTable(type) {
+        const input = document.getElementById(type + 'Search');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById(type + 'Table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const noResults = document.getElementById(type + 'NoResults');
+        const clearBtn = document.getElementById('clear' + type.charAt(0).toUpperCase() + type.slice(1) + 'Search');
+        
+        let visibleCount = 0;
+        
+        // Show/hide clear button
+        if (filter.length > 0) {
+            clearBtn.classList.add('show');
+        } else {
+            clearBtn.classList.remove('show');
+        }
+        
+        // Loop through table rows
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            let found = false;
+            
+            // Search through all cells
+            for (let j = 0; j < cells.length; j++) {
+                const cell = cells[j];
+                if (cell) {
+                    const text = cell.textContent || cell.innerText;
+                    if (text.toLowerCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (found) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        }
+        
+        // Show/hide no results message
+        if (visibleCount === 0 && filter.length > 0) {
+            noResults.classList.add('show');
+        } else {
+            noResults.classList.remove('show');
+        }
+    }
+
+    function clearSearch(type) {
+        const input = document.getElementById(type + 'Search');
+        input.value = '';
+        searchTable(type);
+        input.focus();
+    }
     </script>
 </body>
 </html>

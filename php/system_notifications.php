@@ -1,10 +1,12 @@
 <?php
 include("../connect.php");
-include('log_helper.php'); // Add logging
+include('log_helper.php');
+include('get_setting.php');
 session_start();
 
 header('Content-Type: application/json');
 
+// Authorization check first
 if (!isset($_SESSION['submit'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
@@ -33,6 +35,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 // Send notification
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        // ✅ CHECK IF NOTIFICATIONS ARE ENABLED
+        if (!getSettingBool($con, 'enable_notifications', true)) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Notifications are currently disabled in system settings'
+            ]);
+            exit;
+        }
+        
         $recipientType = $_POST['recipientType'] ?? '';
         $recipientId = $_POST['recipientId'] ?? null;
         $title = $_POST['notifTitle'] ?? '';
@@ -72,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $stmt->execute([
             'recipient_type' => $recipientType,
-            'recipient_id' => $recipientId, // Now properly NULL or integer
+            'recipient_id' => $recipientId,
             'title' => $title,
             'message' => $message,
             'priority' => $priority,

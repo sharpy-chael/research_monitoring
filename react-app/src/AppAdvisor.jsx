@@ -11,7 +11,8 @@ function AppAdvisor() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/research_monitoring/get_advisor_data.php");
+        // FIXED: Correct path - data folder is at root level
+        const res = await fetch("/research_monitoring/data/get_advisor_data.php");
         
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

@@ -5,9 +5,6 @@ body {
   overflow-x: hidden;
 }
 
-/* =====================
-   PROFILE WRAPPER
-   ===================== */
 .profile-wrapper {
   display: flex;
   gap: 25px;
@@ -24,9 +21,6 @@ body {
   margin-left: 230px;
 }
 
-/* =====================
-   PROFILE SIDEBAR
-   ===================== */
 .profile-sidebar {
   background: #ffffff;
   border-radius: 16px;
@@ -88,7 +82,6 @@ body {
   margin: 0;
 }
 
-/* Profile Menu - FIXED VERSION */
 .profile-menu {
   margin-top: 25px;
   display: flex;
@@ -110,48 +103,24 @@ body {
   border-radius: 10px;
   transition: all 0.3s ease;
   background: #fafafa;
-  padding: 12px 16px;
-  position: relative;
-  overflow: hidden;
-}
-
-.profile-menu a::before {
-  content: "";
-  position: absolute;
-  left: -100%;
-  top: 0;
-  height: 100%;
+  padding: 14px 16px;
   width: 100%;
-  background: #a30000;
-  transition: left 0.3s ease;
-  z-index: 0;
-}
-
-.profile-menu a:hover::before,
-.profile-menu a.active::before {
-  left: 0;
-}
-
-.profile-menu a i,
-.profile-menu a span {
-  position: relative;
-  z-index: 1;
-  transition: color 0.3s ease;
+  box-sizing: border-box;
+  min-height: 50px;
 }
 
 .profile-menu a:hover,
 .profile-menu a.active {
   color: #fff;
+  background: #a30000;
   border-color: #a30000;
 }
 
 .profile-menu a i {
   font-size: 18px;
+  flex-shrink: 0;
 }
 
-/* =====================
-   PROFILE DETAILS
-   ===================== */
 .profile-details {
   background: #ffffff;
   border-radius: 16px;
@@ -182,13 +151,12 @@ body {
 
 .profile-details h3 {
   text-align: left;
-  margin: 25px 0 15px;
+  margin: 13px 0 15px;
   font-size: 18px;
   font-weight: 600;
   color: #333;
 }
 
-/* Gender Row */
 .gender-row {
   margin: 15px 0 25px;
   display: flex;
@@ -214,7 +182,6 @@ body {
   accent-color: #a30000;
 }
 
-/* Form Groups */
 .form-group {
   margin-bottom: 18px;
 }
@@ -256,7 +223,6 @@ body {
   min-width: 200px;
 }
 
-/* Buttons */
 .button-row {
   display: flex;
   justify-content: flex-start;
@@ -332,15 +298,13 @@ body {
   transform: translateY(0);
 }
 
-/* =====================
-   UPLOADS CONTAINER
-   ===================== */
 .uploads-container {
   background: #f9f9f9;
   padding: 20px;
   border-radius: 12px;
+  min-height: 20px;
+  max-height: 230px;
   margin-top: 20px;
-  max-height: 400px;
   overflow-y: auto;
   border: 1px solid #e8e8e8;
 }
@@ -528,9 +492,6 @@ body {
   font-style: italic;
 }
 
-/* =====================
-   MODALS
-   ===================== */
 .edit-modal,
 .change-password {
   display: none;
@@ -657,9 +618,6 @@ body {
   transform: rotate(90deg);
 }
 
-/* =====================
-   MESSAGES
-   ===================== */
 .password-message,
 .global-message {
   position: fixed;
@@ -711,9 +669,6 @@ body {
   border: 2px solid #0c6e1c;
 }
 
-/* =====================
-   TABLET RESPONSIVE
-   ===================== */
 @media (max-width: 992px) {
   .profile-wrapper {
     flex-direction: column;
@@ -738,9 +693,6 @@ body {
   }
 }
 
-/* =====================
-   MOBILE RESPONSIVE
-   ===================== */
 @media (max-width: 768px) {
   .profile-wrapper {
     width: 100%;
@@ -805,7 +757,6 @@ body {
 
   .uploads-container {
     padding: 16px;
-    max-height: 350px;
   }
 
   .recent-upload-grid {
@@ -825,9 +776,6 @@ body {
   }
 }
 
-/* =====================
-   EXTRA SMALL MOBILE
-   ===================== */
 @media (max-width: 480px) {
   .profile-wrapper {
     padding: 15px 10px;
@@ -919,9 +867,6 @@ body {
   }
 }
 
-/* =====================
-   LANDSCAPE MODE
-   ===================== */
 @media (max-height: 600px) and (orientation: landscape) {
   .profile-wrapper {
     max-height: none;

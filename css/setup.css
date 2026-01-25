@@ -309,4 +309,11 @@
     .space{
         height: 10px;
     }
+    
+    .modal-content button {
+        text-align: end;
+        font-size: 26px;
+        font-weight: bolder;
+    
+    }
 }

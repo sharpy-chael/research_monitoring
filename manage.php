@@ -42,7 +42,7 @@ foreach ($allGroups as $g) {
     $adviserStmt = $con->prepare("
         SELECT a.name 
         FROM advisor a
-        JOIN groups g ON g.adviser_id = a.id
+        JOIN groups g ON a.advisor_id = CAST(g.advisor_id AS VARCHAR)
         WHERE g.id = :group_id
     ");
     $adviserStmt->execute(['group_id' => $groupId]);
@@ -86,6 +86,26 @@ foreach ($allGroups as $g) {
 // Fetch all available SDGs and Thrusts
 $allSdgs = $con->query("SELECT * FROM un_sdgs ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 $allThrusts = $con->query("SELECT * FROM research_thrusts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'coordinators'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Count unread notifications
+$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -142,7 +162,7 @@ $allThrusts = $con->query("SELECT * FROM research_thrusts ORDER BY name")->fetch
         <div class="group-row">
             <div class="group-list-container-mod">
                 <div class="card student-card">
-                    <label>Groups</label>
+                    <label>All Groups</label>
                     <div class="student-dropdown-wrap">
                         <?php foreach($groups as $grp): ?>
                         <div class="group-item" data-group-id="<?= $grp['group_id'] ?>">
@@ -157,7 +177,7 @@ $allThrusts = $con->query("SELECT * FROM research_thrusts ORDER BY name")->fetch
                             </div>
 
                             <!-- EXPANDABLE CONTENT -->
-                            <div class="members-list">
+                            <div class="members-list" style="display: none;">
 
                                 <hr class="group-divider">
 
@@ -231,29 +251,14 @@ $allThrusts = $con->query("SELECT * FROM research_thrusts ORDER BY name")->fetch
                                     <?php foreach($grp['members'] as $member): ?>
                                         <div class="member-item">
                                             <?= htmlspecialchars($member['name']) ?>
-                                            <i class="ri-delete-bin-line"
-                                               onclick="deleteMember(<?= $member['id'] ?>, this)">
-                                            </i>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
-
-                                <button class="buttoned"
-                                        onclick="promptAddMember(<?= $grp['group_id'] ?>)">
-                                    + Add Member
-                                </button>
 
                             </div>
                         </div>
 
                         <?php endforeach; ?>
-                    </div>
-                </div>
-
-                <div class="card add-student-card" onclick="openAddStudentModal()">
-                    <div class="card-head">
-                        <strong>Add Student</strong>
-                        <i class="ri-add-line"></i>
                     </div>
                 </div>
 
@@ -263,31 +268,7 @@ $allThrusts = $con->query("SELECT * FROM research_thrusts ORDER BY name")->fetch
 </div>
 </main>
 
-<!-- Existing Add Student Modal -->
-<div id="addStudentModal" class="modal">
-    <div id="modalErrorMsg"></div>
-    <div class="modal-content">
-        <span class="close" onclick="closeAddStudentModal()">×</span>
-        <h3 id="hedss">Add Existing Group / Assign Roles</h3>
-        
-        <input type="text" id="modalAdviserId" placeholder="Adviser ID">
-        <input type="text" id="modalLeaderId" placeholder="Leader School ID">
-        <textarea id="modalStudentIds" placeholder="Enter student school IDs (comma-separated)..."></textarea>
-
-        <select id="modalGroupSelect">
-            <option value="" disabled selected>Select Group</option>
-            <?php foreach($groups as $grp): ?>
-            <option value="<?= $grp['group_id'] ?>"><?= htmlspecialchars($grp['group_name']) ?></option>
-            <?php endforeach; ?>
-        </select>
-
-        <input type="text" id="modalNewGroup" placeholder="Or add new group...">
-
-        <button id="buttonzz" onclick="submitGroupAssignment()">Save</button>
-    </div>
-</div>
-
-<!-- New Assignment Modal -->
+<!-- Assignment Modal -->
 <div id="assignModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeAssignModal()">×</span>
@@ -346,7 +327,7 @@ async function addItem(type) {
     formData.append('name', name);
 
     try {
-        const res = await fetch('manage_sdg_thrust.php', {
+        const res = await fetch('php/manage_sdg_thrust.php', {
             method: 'POST',
             body: formData
         });
@@ -383,7 +364,7 @@ async function deleteItem(type, id, elem) {
     formData.append('id', id);
 
     try {
-        const res = await fetch('manage_sdg_thrust.php', {
+        const res = await fetch('php/manage_sdg_thrust.php', {
             method: 'POST',
             body: formData
         });
@@ -418,7 +399,7 @@ async function openAssignModal(type, groupId) {
     formData.append('group_id', groupId);
 
     try {
-        const res = await fetch('manage_sdg_thrust.php', {
+        const res = await fetch('php/manage_sdg_thrust.php', {
             method: 'POST',
             body: formData
         });
@@ -467,7 +448,7 @@ async function submitAssignment() {
     formData.append('ids', JSON.stringify(ids));
 
     try {
-        const res = await fetch('manage_sdg_thrust.php', {
+        const res = await fetch('php/manage_sdg_thrust.php', {
             method: 'POST',
             body: formData
         });
@@ -496,7 +477,7 @@ async function removeAssignment(type, groupId, itemId, elem) {
     formData.append('item_id', itemId);
 
     try {
-        const res = await fetch('manage_sdg_thrust.php', {
+        const res = await fetch('php/manage_sdg_thrust.php', {
             method: 'POST',
             body: formData
         });
@@ -514,70 +495,12 @@ async function removeAssignment(type, groupId, itemId, elem) {
     }
 }
 
-// =====================
-// Existing functions
-// =====================
-async function submitGroupAssignment() {
-    const groupSelect = document.getElementById('modalGroupSelect');
-    const newGroupInput = document.getElementById('modalNewGroup');
-    const leaderId = document.getElementById('modalLeaderId').value.trim();
-    const adviserId = document.getElementById('modalAdviserId').value.trim();
-    const studentIds = document.getElementById('modalStudentIds').value.trim();
-    const errorMsg = document.getElementById('modalErrorMsg');
-    const saveBtn = document.getElementById('buttonzz');
-
-    errorMsg.style.display = 'none';
-    errorMsg.textContent = '';
-
-    if (!newGroupInput.value && !groupSelect.value) {
-        errorMsg.textContent = 'Please select an existing group or create a new one.';
-        errorMsg.style.display = 'block';
-        return;
-    }
-
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
-    saveBtn.classList.add('loading');
-
-    const formData = new FormData();
-    formData.append('group_id', groupSelect.value);
-    formData.append('new_group', newGroupInput.value.trim());
-    formData.append('leader_id', leaderId);
-    formData.append('adviser_id', adviserId);
-    formData.append('students', studentIds);
-
-    try {
-        const res = await fetch('assign_group_roles.php', { 
-            method: 'POST', 
-            body: formData 
-        });
-        
-        const data = await res.json();
-
-        if(data.status === 'success'){
-            location.reload();
-        } else {
-            errorMsg.textContent = data.message || 'An error occurred. Please try again.';
-            errorMsg.style.display = 'block';
-            errorMsg.style.background = 'linear-gradient(135deg, #fee 0%, #fdd 100%)';
-            errorMsg.style.color = '#a00000';
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        errorMsg.textContent = 'Network error. Please check your connection and try again.';
-        errorMsg.style.display = 'block';
-    } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save';
-        saveBtn.classList.remove('loading');
-    }
-}
-
+// Delete group
 async function deleteGroup(id, elem){
-    if(!confirm('Delete this group?')) return;
+    if(!confirm('Delete this group? This will remove all students from this group.')) return;
     
     try {
-        const res = await fetch('add_student.php', {
+        const res = await fetch('php/add_student.php', {
             method: 'POST',
             body: JSON.stringify({delete_group_id: id}),
             headers: {'Content-Type': 'application/json'}
@@ -586,8 +509,6 @@ async function deleteGroup(id, elem){
         
         if(data.success){
             elem.closest('.group-item').remove();
-            const option = document.querySelector(`#modalGroupSelect option[value='${id}']`);
-            if(option) option.remove();
             showToast('Group deleted successfully!', 'success');
         } else {
             showToast(data.message || 'Failed to delete group.', 'error');
@@ -595,6 +516,21 @@ async function deleteGroup(id, elem){
     } catch (error) {
         console.error('Error deleting group:', error);
         showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// Toggle members visibility
+function toggleMembers(icon) {
+    const groupItem = icon.closest('.group-item');
+    const membersList = groupItem.querySelector('.members-list');
+    
+    // Toggle the expanded class
+    if (membersList.style.display === 'none' || membersList.style.display === '') {
+        membersList.style.display = 'block';
+        icon.classList.add('rotated');
+    } else {
+        membersList.style.display = 'none';
+        icon.classList.remove('rotated');
     }
 }
 

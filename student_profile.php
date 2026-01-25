@@ -192,7 +192,7 @@ if ($row) {
 
           if (!confirm("Delete this file?")) return;
 
-          fetch("delete_upload.php", {
+          fetch("php/delete_upload.php", {
               method: "POST",
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               body: "upload_id=" + uploadId
@@ -220,7 +220,7 @@ if ($row) {
     <span class="close-btn" onclick="closeModal()">&times;</span>
     <h2>Edit Personal Information</h2>
 
-    <form id="editForm" action="update_profile.php" method="POST" enctype="multipart/form-data">
+    <form id="editForm" action="php/update_profile.php" method="POST" enctype="multipart/form-data">
       <label>Full Name</label>
       <input type="text" name="name" value="<?php echo htmlspecialchars($_SESSION['name']); ?>" required>
 

@@ -100,99 +100,133 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 <link rel="stylesheet" href="css/notifications.css">
 
 <title>Coordinator Dashboard</title>
+
+<style>
+/* Hide old elements more specifically */
+.main-content > h1:not(.dashboard-header-coord h1) {
+    display: none !important;
+}
+
+.main-content > p:first-of-type {
+    display: none !important;
+}
+
+.card.progress-card {
+    display: none !important;
+}
+
+/* Force white color for dashboard header text */
+.dashboard-header-coord h1,
+.dashboard-header-coord h1 *,
+.dashboard-header-coord p,
+.dashboard-header-coord strong,
+.dashboard-header-coord .welcome-text-coord,
+.dashboard-header-coord .welcome-text-coord strong {
+    color: white !important;
+}
+.main-content .head{
+    color: white !important;
+    font-size: 34px;
+    font-weight: 900;
+    margin-bottom: 10px;
+}
+</style>
 </head>
 
 <body>
 
 <?php include("templates/aside_coordinator.html"); ?>
 
-<!-- REQUIRED by home.css -->
 <main class="main-content">
-
-    <h1>Dashboard</h1>
-    <p>Welcome, <?= htmlspecialchars($_SESSION['name']); ?>.</p>
-
-    <!-- Notifications Section -->
-    <?php if (!empty($notifications)): ?>
-    <div class="notifications-section">
-        <h2>
-            <i class="ri-notification-3-line"></i>
-            Notifications
-            <?php if ($unreadCount > 0): ?>
-                <span class="notification-badge"><?= $unreadCount ?></span>
-            <?php endif; ?>
-        </h2>
-        
-        <div class="notifications-list">
-            <?php foreach ($notifications as $notif): 
-                $priorityClass = 'priority-' . strtolower($notif['priority']);
-                $statusClass = $notif['status'] === 'sent' ? 'unread' : 'read';
-            ?>
-                <div class="notification-card <?= $priorityClass ?> <?= $statusClass ?>">
-                    <div class="notification-header">
-                        <span class="notification-title">
-                            <?php if ($notif['status'] === 'sent'): ?>
-                                <span class="new-badge">NEW</span>
-                            <?php endif; ?>
-                            <?= htmlspecialchars($notif['title']) ?>
-                        </span>
-                        <span class="notification-date">
-                            <?= date('M d, Y • h:i A', strtotime($notif['created_at'])) ?>
-                        </span>
-                    </div>
-                    <div class="notification-body">
-                        <?= nl2br(htmlspecialchars($notif['message'])) ?>
-                    </div>
-                    <?php if ($notif['status'] === 'sent'): ?>
-                        <button class="mark-read-btn" onclick="markAsRead(<?= $notif['id'] ?>)">
-                            <i class="ri-check-line"></i> Mark as Read
-                        </button>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-    <?php else: ?>
-    <div class="no-notifications">
-        <i class="ri-notification-off-line"></i>
-        <p>No notifications yet</p>
-    </div>
-    <?php endif; ?>
-
-    <!-- CONTENT WRAPPER (prevents overflow bugs) -->
-    <div class="dashboard-wrapper">
-
-        <!-- PROGRESS CARD -->
-        <div class="card progress-card">
-            <div class="card-head">
-                <strong>OVERALL RESEARCH PROGRESS</strong>
-                <span class="progress-percent" id="progress-text">0%</span>
+    <!-- Enhanced Dashboard Header -->
+    <div class="dashboard-header-coord">
+        <div class="header-content-coord">
+            <div class="header-text-coord">
+                <h2 class="head"><i class="ri-dashboard-3-line"></i> Dashboard</h2>
+                <p class="welcome-text-coord">
+                    Welcome back, <strong><?= htmlspecialchars($_SESSION['name']); ?></strong>
+                </p>
             </div>
-
-            <div class="progress-bar">
-                <div
-                    id="progress-bar-fill"
-                    class="progress-bar-fill"
-                    style="width:0%">
-                </div>
+            <div class="header-date-coord">
+                <i class="ri-calendar-line"></i>
+                <span id="currentDateCoord"></span>
             </div>
         </div>
+    </div>
 
-        <!-- CHART -->
-        <div class="chart-wrapper">
+    <!-- Enhanced Progress Card -->
+    <div class="progress-card-coord">
+        <div class="progress-header-coord">
+            <div class="progress-title-coord">
+                <i class="ri-progress-3-line"></i>
+                <h2>Overall Research Progress</h2>
+            </div>
+            <div class="progress-percentage-coord" id="progress-text-enhanced">0%</div>
+        </div>
+        <div class="progress-bar-wrapper-coord">
+            <div id="progress-bar-fill-enhanced" class="progress-bar-fill-coord" style="width:0%"></div>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid-coord">
+        <div class="chart-card-coord">
+            <div class="chart-header-coord">
+                <h2><i class="ri-line-chart-line"></i> Analytics Overview</h2>
+                <p class="chart-subtitle-coord">Comprehensive research progress tracking</p>
+            </div>
             <div id="root"></div>
-            <!-- Update this to coordinator build file once you build it -->
-            <script
-                type="module"
-                src="./react-app/dist/assets/coordinator-D-BFdTQT.js"
-                defer>
-            </script>
+            <script type="module" src="./react-app/dist/assets/coordinator-CViSgvpq.js" defer></script>
         </div>
-
     </div>
-    <div style="height: 50px; " class="space"></div>
+
+    <!-- Hidden original elements for script compatibility -->
+    <div style="display: none;">
+        <h1>Dashboard</h1>
+        <p>Welcome, <?= htmlspecialchars($_SESSION['name']); ?>.</p>
+        <div class="dashboard-wrapper">
+            <div class="card progress-card">
+                <div class="card-head">
+                    <strong>OVERALL RESEARCH PROGRESS</strong>
+                    <span class="progress-percent" id="progress-text">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-bar-fill" class="progress-bar-fill" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="height: 50px;" class="space"></div>
 </main>
 
+<script>
+// Display current date
+const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
+document.getElementById('currentDateCoord').textContent = currentDate;
+
+// Sync progress bar with original script
+const observer = new MutationObserver(() => {
+    const oldProgressBar = document.getElementById('progress-bar-fill');
+    const newProgressBar = document.getElementById('progress-bar-fill-enhanced');
+    const newProgressText = document.getElementById('progress-text-enhanced');
+    
+    if (oldProgressBar && newProgressBar) {
+        const width = oldProgressBar.style.width;
+        newProgressBar.style.width = width;
+        newProgressText.textContent = width;
+    }
+});
+
+// Start observing
+setTimeout(() => {
+    const oldProgressBar = document.getElementById('progress-bar-fill');
+    if (oldProgressBar) {
+        observer.observe(oldProgressBar, { attributes: true, attributeFilter: ['style'] });
+    }
+}, 100);
+</script>
 <script src="js/notifications.js"></script>
 </body>
 </html>

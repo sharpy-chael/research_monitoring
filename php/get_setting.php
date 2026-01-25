@@ -28,4 +28,9 @@ function getSettingInt($con, $settingKey, $defaultValue = 0) {
     $value = getSetting($con, $settingKey, $defaultValue);
     return (int)$value;
 }
+
+function getSettingString($con, $settingKey, $defaultValue = '') {
+    $value = getSetting($con, $settingKey, $defaultValue);
+    return (string)$value;
+}
 ?>
