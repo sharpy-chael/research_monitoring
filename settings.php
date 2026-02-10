@@ -160,8 +160,8 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
                                         <i class="ri-edit-line"></i>
                                     </button>
                                     <button class="btn-toggle" onclick='setActiveAY(<?= $ay['id'] ?>, <?= $ay['is_active'] ? "false" : "true" ?>)'>
-                                        <i class="ri-checkbox-<?= $ay['is_active'] ? 'fill' : 'blank' ?>-circle-line"></i>
-                                    </button>
+    <i class="ri-toggle-<?= $ay['is_active'] ? 'fill' : 'line' ?>"></i>
+</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

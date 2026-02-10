@@ -61,15 +61,15 @@ if (!empty($_POST['submit'])) {
     <div class="wrappers">
         <a href="portal.php"><i class='bx  bxs-arrow-left-stroke'  ></i></a>
             <form action="" method="post">
-                    <h1>Log In Form</h1>
+                    <h1>Administrator</h1>
                 <div class="input">
-                    <label for="Administrator">Administrator</label>
-                    <input type="text" name="name" placeholder="Name">
+                    <label for="Administrator">Username</label>
+                    <input type="text" name="name" placeholder="Enter your Username" required>
                     <i class='bxr  bx-user'  ></i> 
                 </div>
                 <div class="input">
                     <label for="Password">Password</label>
-                    <input type="password" name="password" placeholder="Password">
+                    <input type="password" name="password" placeholder="Enter your Password">
                     <i class='bxr  bx-lock'  ></i>
                 </div>
                 <div class="btn">
@@ -77,7 +77,7 @@ if (!empty($_POST['submit'])) {
                     
                 </div >
                 <div class="a">
-                    <p>Dont have an account yet? <a href="signed.php">Sign up</a></p> 
+                    <p>Welcome, <a href=" ">Administrator</a>.</p> 
                 </div>
            </form> 
         </div>

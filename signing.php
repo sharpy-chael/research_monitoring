@@ -23,12 +23,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
         exit();
     }
 
-    // Password validation
-    $uppercase = preg_match('@[A-Z]@', $password);
-    $lowercase = preg_match('@[a-z]@', $password);
     $number = preg_match('@[0-9]@', $password);
-    $specialChars = preg_match('@[^\w]@', $password);
-    $rules = strlen($password) >= 8 && $uppercase && $lowercase && $number && $specialChars;
+    $rules = strlen($password) >= 8 && $number;
 
     if (!$rules) {
         $_SESSION['error_message'] = "The password should be valid";
@@ -99,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                 <div class="a">
                     <p class="login-link">Go back to <a href="loginn.php">Log In</a></p>
                 </div>
-                <p style="font-size: 10px;">Password should have at least 8 characters, a capital letter, a number, and a special character.</p>
+                <p style="font-size: 10px;">Password should have at least 8 characters.</p>
             </form>
         </div>
     </div>

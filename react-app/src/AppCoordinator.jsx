@@ -10,14 +10,11 @@ function AppCoordinator() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // FIXED: Correct path - data folder is at root level
         const res = await fetch("/research_monitoring/data/get_coordinator_data.php");
         const data = await res.json();
         
         setChartData(data);
         console.log("Coordinator data:", data);
-        
-        // Update progress bar (percentage of approved tasks)
         const approved = data.pie.data[0];
         const total = data.pie.data.reduce((sum, val) => sum + val, 0);
         const percentage = total > 0 ? ((approved / total) * 100).toFixed(2) : 0;

@@ -9,12 +9,11 @@ export const LineGraph = ({ data }) => {
   const isAdvisorView = data.datasets && data.datasets.length > 0 && data.datasets[0]?.label !== "Approved" && data.datasets[0]?.label !== "Pending" && data.datasets[0]?.label !== "Rejected";
   const isCoordinatorView = data.datasets && data.datasets.length > 0 && (
     data.datasets.some(ds => ds.label === "Approved") ||
-    data.datasets.some(ds => ds.label === "Pending") ||
     data.datasets.some(ds => ds.label === "Rejected")
   );
 
-  // Check if this is percentage-based (student/advisor) or count-based (coordinator)
-  const isPercentage = isStudentView || isAdvisorView;
+  // Coordinator view now uses percentages
+  const isPercentage = isStudentView || isAdvisorView || isCoordinatorView;
   
   const options = {
     responsive: true,
@@ -27,33 +26,34 @@ export const LineGraph = ({ data }) => {
           ? "Research Progress Over Time" 
           : isAdvisorView 
             ? "Group Progress Comparison" 
-            : "Submission Activity Over Time",
+            : "Submission Status Percentages Over Time",
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += context.parsed.y.toFixed(2) + '%';
+            }
+            return label;
+          }
+        }
+      }
     },
     scales: {
       y: {
         beginAtZero: true,
-        ...(isPercentage ? {
-          // Percentage scale for student/advisor
-          min: 0,
-          max: 100,
-          ticks: {
-            callback: function(value) {
-              return value + '%';
-            },
-            stepSize: 10
-          }
-        } : {
-          // Count scale for coordinator - only show whole numbers
-          ticks: {
-            callback: function(value) {
-              if (Math.floor(value) === value) {
-                return value; // Only display if it's a whole number
-              }
-            },
-            stepSize: 1
-          }
-        })
+        min: 0,
+        max: 100,
+        ticks: {
+          callback: function(value) {
+            return value + '%';
+          },
+          stepSize: 10
+        }
       },
     },
   };

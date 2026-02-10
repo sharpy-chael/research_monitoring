@@ -7,9 +7,9 @@ if (!isset($_SESSION['submit'])) {
     exit;
 }
 
-// Fetch all users with their status
+// Fetch all users with their status - FIXED: Added s.group_id to query
 $students = $con->query("
-    SELECT s.id, s.name, s.school_id, s.program, s.is_active, g.name as group_name
+    SELECT s.id, s.name, s.school_id, s.program, s.is_active, s.group_id, g.name as group_name
     FROM student s
     LEFT JOIN groups g ON s.group_id = g.id
     ORDER BY s.name
@@ -271,7 +271,7 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
                 <div class="form-group" id="passwordGroup">
                     <label>Password <span class="required" id="passwordRequired">*</span></label>
                     <input type="password" id="password" name="password">
-                    <small id="passwordHint">Leave blank to keep current password</small>
+                    <small id="passwordHint">Leave blank to keep current password (Password must have 8 characters)</small>
                 </div>
                 
                 <div class="modal-buttons">
@@ -360,6 +360,11 @@ $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO
         if (type === 'student') {
             document.getElementById('schoolId').value = user.school_id || '';
             document.getElementById('program').value = user.program || '';
+            
+            // FIXED: Set the group_id dropdown value
+            const groupSelect = document.getElementById('groupId');
+            groupSelect.value = user.group_id || '';
+            
             document.getElementById('schoolIdGroup').style.display = 'block';
             document.getElementById('programGroup').style.display = 'block';
             document.getElementById('groupGroup').style.display = 'block';

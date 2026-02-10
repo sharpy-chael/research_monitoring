@@ -119,6 +119,7 @@ foreach ($assignedGroups as $g) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/advisor.css">
@@ -189,7 +190,7 @@ foreach ($assignedGroups as $g) {
                 <p class="chart-subtitle">Track group performance over time</p>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/advisor-BYUhvqVW.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/advisor-qVfMtLaX.js" defer></script>
         </div>
     </div>
     

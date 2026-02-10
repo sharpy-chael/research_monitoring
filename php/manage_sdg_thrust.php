@@ -10,10 +10,27 @@ if (!isset($_SESSION['submit'])) {
 }
 
 $action = $_POST['action'] ?? '';
+$userRole = $_SESSION['role'] ?? '';
+$userId = $_SESSION['id'] ?? 0;
+
+// Get advisor_id for the current user
+$advisorId = null;
+if ($userRole === 'advisor') {
+    $advisorStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
+    $advisorStmt->execute(['id' => $userId]);
+    $advisorData = $advisorStmt->fetch(PDO::FETCH_ASSOC);
+    $advisorId = $advisorData['advisor_id'] ?? null;
+}
 
 try {
     switch ($action) {
         case 'add':
+            // Only advisors can add SDGs/Thrusts
+            if ($userRole !== 'advisor' || !$advisorId) {
+                echo json_encode(['success' => false, 'message' => 'Only advisors can add items']);
+                exit;
+            }
+
             $type = $_POST['type'] ?? '';
             $name = trim($_POST['name'] ?? '');
 
@@ -23,21 +40,43 @@ try {
             }
 
             if ($type === 'sdg') {
-                $stmt = $con->prepare("INSERT INTO un_sdgs (name) VALUES (:name) RETURNING id");
+                // Check if this advisor already created this SDG (exact name match)
+                $checkStmt = $con->prepare("SELECT id FROM un_sdgs WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name)) AND advisor_id = :advisor_id");
+                $checkStmt->execute(['name' => $name, 'advisor_id' => $advisorId]);
+                if ($checkStmt->rowCount() > 0) {
+                    echo json_encode(['success' => false, 'message' => 'You already created this SDG']);
+                    exit;
+                }
+
+                $stmt = $con->prepare("INSERT INTO un_sdgs (name, advisor_id) VALUES (:name, :advisor_id) RETURNING id");
+                $stmt->execute(['name' => $name, 'advisor_id' => $advisorId]);
             } elseif ($type === 'thrust') {
-                $stmt = $con->prepare("INSERT INTO research_thrusts (name) VALUES (:name) RETURNING id");
+                // Check if this advisor already created this thrust (exact name match)
+                $checkStmt = $con->prepare("SELECT id FROM research_thrusts WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name)) AND advisor_id = :advisor_id");
+                $checkStmt->execute(['name' => $name, 'advisor_id' => $advisorId]);
+                if ($checkStmt->rowCount() > 0) {
+                    echo json_encode(['success' => false, 'message' => 'You already created this Research Thrust']);
+                    exit;
+                }
+
+                $stmt = $con->prepare("INSERT INTO research_thrusts (name, advisor_id) VALUES (:name, :advisor_id) RETURNING id");
+                $stmt->execute(['name' => $name, 'advisor_id' => $advisorId]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Invalid type']);
                 exit;
             }
 
-            $stmt->execute(['name' => $name]);
             $id = $stmt->fetchColumn();
-
             echo json_encode(['success' => true, 'id' => $id]);
             break;
 
         case 'delete':
+            // Only advisors can delete their own SDGs/Thrusts
+            if ($userRole !== 'advisor' || !$advisorId) {
+                echo json_encode(['success' => false, 'message' => 'Only advisors can delete items']);
+                exit;
+            }
+
             $type = $_POST['type'] ?? '';
             $id = intval($_POST['id'] ?? 0);
 
@@ -47,15 +86,23 @@ try {
             }
 
             if ($type === 'sdg') {
-                $stmt = $con->prepare("DELETE FROM un_sdgs WHERE id = :id");
+                // Only allow deleting if this advisor created it
+                $stmt = $con->prepare("DELETE FROM un_sdgs WHERE id = :id AND advisor_id = :advisor_id");
             } elseif ($type === 'thrust') {
-                $stmt = $con->prepare("DELETE FROM research_thrusts WHERE id = :id");
+                // Only allow deleting if this advisor created it
+                $stmt = $con->prepare("DELETE FROM research_thrusts WHERE id = :id AND advisor_id = :advisor_id");
             } else {
                 echo json_encode(['success' => false, 'message' => 'Invalid type']);
                 exit;
             }
 
-            $stmt->execute(['id' => $id]);
+            $stmt->execute(['id' => $id, 'advisor_id' => $advisorId]);
+            
+            if ($stmt->rowCount() === 0) {
+                echo json_encode(['success' => false, 'message' => 'Item not found or you do not have permission to delete it']);
+                exit;
+            }
+
             echo json_encode(['success' => true]);
             break;
 
@@ -69,31 +116,61 @@ try {
             }
 
             if ($type === 'sdg') {
-                $stmt = $con->prepare("
-                    SELECT id, name 
-                    FROM un_sdgs 
-                    WHERE id NOT IN (
-                        SELECT sdg_id FROM group_sdgs WHERE group_id = :group_id
-                    )
-                    ORDER BY name
-                ");
+                if ($userRole === 'advisor' && $advisorId) {
+                    // Advisors see only their own SDGs
+                    $stmt = $con->prepare("
+                        SELECT id, name 
+                        FROM un_sdgs 
+                        WHERE advisor_id = :advisor_id
+                        AND id NOT IN (
+                            SELECT sdg_id FROM group_sdgs WHERE group_id = :group_id
+                        )
+                        ORDER BY name
+                    ");
+                    $stmt->execute(['advisor_id' => $advisorId, 'group_id' => $groupId]);
+                } else {
+                    // Coordinators see all SDGs
+                    $stmt = $con->prepare("
+                        SELECT id, name 
+                        FROM un_sdgs 
+                        WHERE id NOT IN (
+                            SELECT sdg_id FROM group_sdgs WHERE group_id = :group_id
+                        )
+                        ORDER BY name
+                    ");
+                    $stmt->execute(['group_id' => $groupId]);
+                }
             } elseif ($type === 'thrust') {
-                $stmt = $con->prepare("
-                    SELECT id, name 
-                    FROM research_thrusts 
-                    WHERE id NOT IN (
-                        SELECT thrust_id FROM group_thrusts WHERE group_id = :group_id
-                    )
-                    ORDER BY name
-                ");
+                if ($userRole === 'advisor' && $advisorId) {
+                    // Advisors see only their own thrusts
+                    $stmt = $con->prepare("
+                        SELECT id, name 
+                        FROM research_thrusts 
+                        WHERE advisor_id = :advisor_id
+                        AND id NOT IN (
+                            SELECT thrust_id FROM group_thrusts WHERE group_id = :group_id
+                        )
+                        ORDER BY name
+                    ");
+                    $stmt->execute(['advisor_id' => $advisorId, 'group_id' => $groupId]);
+                } else {
+                    // Coordinators see all thrusts
+                    $stmt = $con->prepare("
+                        SELECT id, name 
+                        FROM research_thrusts 
+                        WHERE id NOT IN (
+                            SELECT thrust_id FROM group_thrusts WHERE group_id = :group_id
+                        )
+                        ORDER BY name
+                    ");
+                    $stmt->execute(['group_id' => $groupId]);
+                }
             } else {
                 echo json_encode(['success' => false, 'message' => 'Invalid type']);
                 exit;
             }
 
-            $stmt->execute(['group_id' => $groupId]);
             $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
             echo json_encode(['success' => true, 'items' => $items]);
             break;
 

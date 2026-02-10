@@ -60,7 +60,7 @@ body {
     border-radius: 15px;
     width: 100%;
     max-width: 400px;
-    height: 310px;
+    height: 243px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     transition: transform 0.3s ease;
     overflow: hidden;
@@ -120,10 +120,10 @@ body {
 }
 
 .admin .card-header { background-color: #28a745; }
-.admin .card-header::after { border-top: 10px solid #28a745; }
+.admin .card-header::after { border-top: 11px solid #28a745; }
 
 .coordinator .card-header { background-color: #9aa728; }
-.coordinator.card-header::after { border-top: 10px solid #94a728; }
+.coordinator .card-header::after { border-top: 11px solid #94a728; }
 
 .adviser .card-header { background-color: #a00000; }
 .adviser .card-header::after { border-top: 10px solid #a00000; }
@@ -132,7 +132,7 @@ body {
 .student .card-header::after { border-top: 10px solid #4285f4; }
 
 .card-body {
-    padding: 110px 20px 35px;
+    padding: 43px 20px 35px;
 }
 .btn {
     display: block;

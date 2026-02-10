@@ -473,7 +473,26 @@ table tbody tr:hover {
 .btn-danger:hover {
     background: #c82333;
 }
+/* Checkbox styling for settings modal */
+.form-group .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
 
+.form-group .checkbox-wrapper input[type="checkbox"] {
+    width: auto;
+    height: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
+.form-group .checkbox-wrapper label {
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
 /* Tablet View (768px - 1024px) */
 @media (max-width: 1024px) {
     .page-header h1 {

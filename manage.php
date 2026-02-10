@@ -113,7 +113,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Research Management</title>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
 <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
 <link rel="stylesheet" href="css/home.css">
@@ -124,36 +124,40 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 
 <main class="main-content">
 
-<!-- SDG and Thrust Management Section -->
+<!-- SDG and Thrust Viewing Section (Read-Only for Coordinators) -->
 <div class="manage-section">
-    <h2><i class="ri-global-line"></i> Manage UN SDGs</h2>
+    <h2><i class="ri-global-line"></i> All UN SDGs</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px; margin-top: 5px;">
+        <i class="ri-information-line"></i> Advisors manage SDGs and Research Thrusts. You can view all entries here.
+    </p>
     <div class="items-grid" id="sdgGrid">
-        <?php foreach($allSdgs as $sdg): ?>
-        <div class="item-card" data-id="<?= $sdg['id'] ?>">
-            <span class="item-name"><?= htmlspecialchars($sdg['name']) ?></span>
-            <i class="ri-delete-bin-line delete-icon" onclick="deleteItem('sdg', <?= $sdg['id'] ?>, this)"></i>
-        </div>
-        <?php endforeach; ?>
-    </div>
-    <div class="add-item-form">
-        <input type="text" id="newSdgName" placeholder="Enter new UN SDG name...">
-        <button onclick="addItem('sdg')"><i class="ri-add-line"></i> Add SDG</button>
+        <?php if (empty($allSdgs)): ?>
+            <p style="color: #999; font-style: italic; padding: 20px;">No SDGs created yet. Advisors can create them.</p>
+        <?php else: ?>
+            <?php foreach($allSdgs as $sdg): ?>
+            <div class="item-card" data-id="<?= $sdg['id'] ?>">
+                <span class="item-name"><?= htmlspecialchars($sdg['name']) ?></span>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 </div>
 
 <div class="manage-section">
-    <h2><i class="ri-flashlight-line"></i> Manage Research Thrusts</h2>
+    <h2><i class="ri-flashlight-line"></i> All Research Thrusts</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px; margin-top: 5px;">
+        <i class="ri-information-line"></i> Advisors manage SDGs and Research Thrusts. You can view all entries here.
+    </p>
     <div class="items-grid" id="thrustGrid">
-        <?php foreach($allThrusts as $thrust): ?>
-        <div class="item-card" data-id="<?= $thrust['id'] ?>">
-            <span class="item-name"><?= htmlspecialchars($thrust['name']) ?></span>
-            <i class="ri-delete-bin-line delete-icon" onclick="deleteItem('thrust', <?= $thrust['id'] ?>, this)"></i>
-        </div>
-        <?php endforeach; ?>
-    </div>
-    <div class="add-item-form">
-        <input type="text" id="newThrustName" placeholder="Enter new Research Thrust name...">
-        <button onclick="addItem('thrust')"><i class="ri-add-line"></i> Add Thrust</button>
+        <?php if (empty($allThrusts)): ?>
+            <p style="color: #999; font-style: italic; padding: 20px;">No Research Thrusts created yet. Advisors can create them.</p>
+        <?php else: ?>
+            <?php foreach($allThrusts as $thrust): ?>
+            <div class="item-card" data-id="<?= $thrust['id'] ?>">
+                <span class="item-name"><?= htmlspecialchars($thrust['name']) ?></span>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -218,35 +222,35 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                                     </div>
                                 <?php endif; ?>
 
-                                <!-- SDGs and Thrusts Section -->
+                                <!-- SDGs and Thrusts Section (READ-ONLY FOR COORDINATORS) -->
                                 <div class="sdg-thrust-section">
                                     <h4><i class="ri-global-line"></i> UN SDGs</h4>
                                     <div class="tags-container">
-                                        <?php foreach($grp['sdgs'] as $sdg): ?>
-                                        <span class="tag">
-                                            <?= htmlspecialchars($sdg['name']) ?>
-                                            <i class="ri-close-line" onclick="removeAssignment('sdg', <?= $grp['group_id'] ?>, <?= $sdg['id'] ?>, this)"></i>
-                                        </span>
-                                        <?php endforeach; ?>
+                                        <?php if (empty($grp['sdgs'])): ?>
+                                            <span style="color: #999; font-size: 13px; font-style: italic;">No SDGs assigned yet</span>
+                                        <?php else: ?>
+                                            <?php foreach($grp['sdgs'] as $sdg): ?>
+                                            <span class="tag" style="padding-right: 12px;">
+                                                <?= htmlspecialchars($sdg['name']) ?>
+                                            </span>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
                                     </div>
-                                    <button class="assign-btn" onclick="openAssignModal('sdg', <?= $grp['group_id'] ?>)">
-                                        <i class="ri-add-line"></i> Assign SDG
-                                    </button>
 
                                     <h4 style="margin-top: 15px;"><i class="ri-flashlight-line"></i> Research Thrusts</h4>
                                     <div class="tags-container">
-                                        <?php foreach($grp['thrusts'] as $thrust): ?>
-                                        <span class="tag thrust">
-                                            <?= htmlspecialchars($thrust['name']) ?>
-                                            <i class="ri-close-line" onclick="removeAssignment('thrust', <?= $grp['group_id'] ?>, <?= $thrust['id'] ?>, this)"></i>
-                                        </span>
-                                        <?php endforeach; ?>
+                                        <?php if (empty($grp['thrusts'])): ?>
+                                            <span style="color: #999; font-size: 13px; font-style: italic;">No Research Thrusts assigned yet</span>
+                                        <?php else: ?>
+                                            <?php foreach($grp['thrusts'] as $thrust): ?>
+                                            <span class="tag thrust" style="padding-right: 12px;">
+                                                <?= htmlspecialchars($thrust['name']) ?>
+                                            </span>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
                                     </div>
-                                    <button class="assign-btn" onclick="openAssignModal('thrust', <?= $grp['group_id'] ?>)">
-                                        <i class="ri-add-line"></i> Assign Thrust
-                                    </button>
                                 </div>
-
+                                <div class="lists"><p><i class="ri-group-line"></i> Members</p></div>
                                 <div class="members">
                                     <?php foreach($grp['members'] as $member): ?>
                                         <div class="member-item">
@@ -268,29 +272,10 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 </div>
 </main>
 
-<!-- Assignment Modal -->
-<div id="assignModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeAssignModal()">×</span>
-        <h3 id="assignModalTitle">Assign</h3>
-        
-        <div id="assignCheckboxes" style="max-height: 300px; overflow-y: auto; padding: 10px;">
-            <!-- Checkboxes will be populated here -->
-        </div>
-
-        <button onclick="submitAssignment()" style="margin-top: 15px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            Assign Selected
-        </button>
-    </div>
-</div>
-
 <script src="js/timeout.js"></script>
 <script src="js/edit.js"></script>
 
 <script>
-// Store current assignment context
-let currentAssignContext = { type: null, groupId: null };
-
 // Toast notification function
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
@@ -309,190 +294,6 @@ function showToast(message, type = 'success') {
         toast.classList.add('removing');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
-}
-
-// Add SDG or Thrust
-async function addItem(type) {
-    const inputId = type === 'sdg' ? 'newSdgName' : 'newThrustName';
-    const name = document.getElementById(inputId).value.trim();
-    
-    if (!name) {
-        showToast('Please enter a name', 'error');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('action', 'add');
-    formData.append('type', type);
-    formData.append('name', name);
-
-    try {
-        const res = await fetch('php/manage_sdg_thrust.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            const grid = document.getElementById(type === 'sdg' ? 'sdgGrid' : 'thrustGrid');
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.dataset.id = data.id;
-            card.innerHTML = `
-                <span class="item-name">${name}</span>
-                <i class="ri-delete-bin-line delete-icon" onclick="deleteItem('${type}', ${data.id}, this)"></i>
-            `;
-            grid.appendChild(card);
-            document.getElementById(inputId).value = '';
-            showToast(`${type === 'sdg' ? 'SDG' : 'Research Thrust'} added successfully!`, 'success');
-        } else {
-            showToast(data.message || 'Failed to add item', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Network error. Please try again.', 'error');
-    }
-}
-
-// Delete SDG or Thrust
-async function deleteItem(type, id, elem) {
-    if (!confirm(`Delete this ${type}?`)) return;
-
-    const formData = new FormData();
-    formData.append('action', 'delete');
-    formData.append('type', type);
-    formData.append('id', id);
-
-    try {
-        const res = await fetch('php/manage_sdg_thrust.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            elem.closest('.item-card').remove();
-            showToast(`${type === 'sdg' ? 'SDG' : 'Research Thrust'} deleted successfully!`, 'success');
-        } else {
-            showToast(data.message || 'Failed to delete item', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Network error. Please try again.', 'error');
-    }
-}
-
-// Open assignment modal
-async function openAssignModal(type, groupId) {
-    currentAssignContext = { type, groupId };
-    
-    const modal = document.getElementById('assignModal');
-    const title = document.getElementById('assignModalTitle');
-    const checkboxContainer = document.getElementById('assignCheckboxes');
-    
-    title.textContent = `Assign ${type === 'sdg' ? 'UN SDG' : 'Research Thrust'}`;
-    
-    // Fetch available items
-    const formData = new FormData();
-    formData.append('action', 'get_available');
-    formData.append('type', type);
-    formData.append('group_id', groupId);
-
-    try {
-        const res = await fetch('php/manage_sdg_thrust.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            checkboxContainer.innerHTML = '';
-            data.items.forEach(item => {
-                const label = document.createElement('label');
-                label.style.display = 'block';
-                label.style.padding = '8px';
-                label.style.cursor = 'pointer';
-                label.innerHTML = `
-                    <input type="checkbox" value="${item.id}" style="margin-right: 8px;">
-                    ${item.name}
-                `;
-                checkboxContainer.appendChild(label);
-            });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-
-    modal.classList.add('show');
-}
-
-function closeAssignModal() {
-    document.getElementById('assignModal').classList.remove('show');
-    currentAssignContext = { type: null, groupId: null };
-}
-
-// Submit assignment
-async function submitAssignment() {
-    const checkboxes = document.querySelectorAll('#assignCheckboxes input[type="checkbox"]:checked');
-    const ids = Array.from(checkboxes).map(cb => cb.value);
-
-    if (ids.length === 0) {
-        showToast('Please select at least one item', 'error');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('action', 'assign');
-    formData.append('type', currentAssignContext.type);
-    formData.append('group_id', currentAssignContext.groupId);
-    formData.append('ids', JSON.stringify(ids));
-
-    try {
-        const res = await fetch('php/manage_sdg_thrust.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            showToast('Assignment successful! Refreshing...', 'success');
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast(data.message || 'Failed to assign', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Network error. Please try again.', 'error');
-    }
-}
-
-// Remove assignment
-async function removeAssignment(type, groupId, itemId, elem) {
-    if (!confirm(`Remove this ${type} assignment?`)) return;
-
-    const formData = new FormData();
-    formData.append('action', 'remove_assignment');
-    formData.append('type', type);
-    formData.append('group_id', groupId);
-    formData.append('item_id', itemId);
-
-    try {
-        const res = await fetch('php/manage_sdg_thrust.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            elem.closest('.tag').remove();
-            showToast('Assignment removed successfully!', 'success');
-        } else {
-            showToast(data.message || 'Failed to remove assignment', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Network error. Please try again.', 'error');
-    }
 }
 
 // Delete group
@@ -531,14 +332,6 @@ function toggleMembers(icon) {
     } else {
         membersList.style.display = 'none';
         icon.classList.remove('rotated');
-    }
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const assignModal = document.getElementById('assignModal');
-    if (event.target === assignModal) {
-        closeAssignModal();
     }
 }
 </script>

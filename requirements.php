@@ -165,7 +165,7 @@ $tasks = [
     "Chapter 3",
     "Chapter 4",
     "Chapter 5",
-    "Final Research Output"
+    // "Final Research Output"
 ];
 
 // Determine active (unlocked) task
@@ -183,7 +183,7 @@ foreach ($tasks as $task) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Requirements</title>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/requirements.css">
@@ -197,8 +197,6 @@ foreach ($tasks as $task) {
         .add-btn.disabled i {
             margin-right: 5px;
         }
-        
-        /* Milestone Cards Styles */
         .milestone-status {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -264,14 +262,10 @@ foreach ($tasks as $task) {
 <div class="wrapper">
 
     <h1 class="req-title">Requirements</h1>
-
-    <!-- Read-Only Notice -->
     <div class="read-only-note">
         <i class="ri-information-line"></i>
         <strong>Note:</strong> All milestone uploads are handled by your adviser. You can view the status here.
     </div>
-
-    <!-- SDGs and Thrusts Banner -->
     <?php if (!empty($assignedSdgs) || !empty($assignedThrusts)): ?>
     <div class="assignments-banner">
         <h2><i class="ri-bookmark-line"></i> Your Research Assignments</h2>

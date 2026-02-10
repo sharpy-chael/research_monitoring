@@ -174,7 +174,7 @@ if (isset($urecMap['UREC Clearance']) && $urecMap['UREC Clearance']['status'] ==
 }
 
 // Calculate percentage based on 12 total items (6 chapters + 6 milestones)
-$progressPercentage = round(($approvedCount / 12) * 100);
+$progressPercentage = round(($approvedCount / 11) * 100);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -182,6 +182,7 @@ $progressPercentage = round(($approvedCount / 12) * 100);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/notifications.css">
@@ -236,7 +237,7 @@ $progressPercentage = round(($approvedCount / 12) * 100);
             </div>
         </div>
         <div class="progress-description">
-            <?= $approvedCount ?> of 12 Requirements Completed
+            <?= $approvedCount ?> of 11 Requirements Completed
         </div>
         <div class="progress-bar-enhanced">
             <div class="progress-bar-fill-enhanced" style="width: <?= $progressPercentage ?>%;"></div>
@@ -251,7 +252,7 @@ $progressPercentage = round(($approvedCount / 12) * 100);
                 <p class="chart-subtitle-student">Track your research journey</p>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/student-D4eA2g9T.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/student-CNcHmWOv.js" defer></script>
         </div>
     </div>
     

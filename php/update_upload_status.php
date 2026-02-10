@@ -200,10 +200,24 @@ try {
     
     // Handle UREC document status update
     if ($document_id) {
-        // Get document info for logging
-        $infoStmt = $con->prepare("SELECT document_type, original_filename FROM urec_documents WHERE id = :document_id");
-        $infoStmt->execute(['document_id' => $document_id]);
-        $docInfo = $infoStmt->fetch(PDO::FETCH_ASSOC);
+        // Check current status first to prevent modifying approved documents
+        $checkStmt = $con->prepare("SELECT status, document_type, original_filename FROM urec_documents WHERE id = :document_id");
+        $checkStmt->execute(['document_id' => $document_id]);
+        $docInfo = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$docInfo) {
+            echo json_encode(['success' => false, 'message' => 'Document not found']);
+            exit;
+        }
+        
+        // CRITICAL: Prevent any status changes if already approved
+        if ($docInfo['status'] === 'approved') {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'This document has already been approved and cannot be modified. Once approved, the status is locked.'
+            ]);
+            exit;
+        }
         
         // Update the UREC document status
         $stmt = $con->prepare("UPDATE urec_documents SET status = :status WHERE id = :document_id");
@@ -225,17 +239,31 @@ try {
             
             echo json_encode(['success' => true, 'message' => 'Status updated successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Document not found']);
+            echo json_encode(['success' => false, 'message' => 'Failed to update status']);
         }
     }
     // Handle regular upload status update
     elseif ($upload_id) {
-        // Get upload info for logging
-        $infoStmt = $con->prepare("SELECT task_name, original_filename FROM uploads WHERE upload_id = :upload_id");
-        $infoStmt->execute(['upload_id' => $upload_id]);
-        $uploadInfo = $infoStmt->fetch(PDO::FETCH_ASSOC);
+        // FIRST: Check current status to prevent modifying approved documents
+        $checkStmt = $con->prepare("SELECT status, task_name, original_filename FROM uploads WHERE upload_id = :upload_id");
+        $checkStmt->execute(['upload_id' => $upload_id]);
+        $uploadInfo = $checkStmt->fetch(PDO::FETCH_ASSOC);
         
-        // Update the upload status
+        if (!$uploadInfo) {
+            echo json_encode(['success' => false, 'message' => 'Upload not found']);
+            exit;
+        }
+        
+        // CRITICAL: Prevent any status changes if already approved
+        if ($uploadInfo['status'] === 'approved') {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'This document has already been approved and cannot be modified. Once approved, the status is locked.'
+            ]);
+            exit;
+        }
+        
+        // Proceed with update if not approved
         $stmt = $con->prepare("UPDATE uploads SET status = :status WHERE upload_id = :upload_id");
         $stmt->execute([
             'status' => $status,
@@ -255,7 +283,7 @@ try {
             
             echo json_encode(['success' => true, 'message' => 'Status updated successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Upload not found']);
+            echo json_encode(['success' => false, 'message' => 'Failed to update status']);
         }
     }
 } catch (PDOException $e) {

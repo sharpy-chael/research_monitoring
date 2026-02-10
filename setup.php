@@ -79,6 +79,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="css/home.css">
@@ -89,7 +90,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
     <?php include("templates/aside_coordinator.html"); ?>
     
     <main class="main-content">
-        <h1 style="color: #a00000;"><i class="ri-file-chart-line"></i> Monitoring Reports</h1>
+        <h1 id="head"><i class="ri-file-chart-line"></i> Monitoring Reports</h1>
         
         <!-- Summary Dashboard -->
         <div class="summary-cards">

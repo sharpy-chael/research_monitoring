@@ -94,7 +94,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
 <link href="https://cdn.boxicons.com/fonts/basic/boxicons.min.css" rel="stylesheet">
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="css/home.css">
 <link rel="stylesheet" href="css/manage.css">
 <link rel="stylesheet" href="css/notifications.css">
@@ -176,7 +176,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                 <p class="chart-subtitle-coord">Comprehensive research progress tracking</p>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/coordinator-CViSgvpq.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/coordinator-CnanJDvs.js" defer></script>
         </div>
     </div>
 
@@ -201,31 +201,40 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 </main>
 
 <script>
+
 // Display current date
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
 document.getElementById('currentDateCoord').textContent = currentDate;
 
-// Sync progress bar with original script
-const observer = new MutationObserver(() => {
-    const oldProgressBar = document.getElementById('progress-bar-fill');
-    const newProgressBar = document.getElementById('progress-bar-fill-enhanced');
-    const newProgressText = document.getElementById('progress-text-enhanced');
-    
-    if (oldProgressBar && newProgressBar) {
-        const width = oldProgressBar.style.width;
-        newProgressBar.style.width = width;
-        newProgressText.textContent = width;
+// Fetch and update progress from coordinator data
+async function updateProgress() {
+    try {
+        const response = await fetch('/research_monitoring/data/get_coordinator_data.php');
+        const data = await response.json();
+        
+        if (data.progress !== undefined) {
+            const progressBar = document.getElementById('progress-bar-fill-enhanced');
+            const progressText = document.getElementById('progress-text-enhanced');
+            const oldProgressBar = document.getElementById('progress-bar-fill');
+            const oldProgressText = document.getElementById('progress-text');
+            
+            const progressValue = data.progress + '%';
+            
+            if (progressBar) progressBar.style.width = progressValue;
+            if (progressText) progressText.textContent = progressValue;
+            if (oldProgressBar) oldProgressBar.style.width = progressValue;
+            if (oldProgressText) oldProgressText.textContent = progressValue;
+        }
+    } catch (error) {
+        console.error('Error fetching progress:', error);
     }
-});
+}
 
-// Start observing
-setTimeout(() => {
-    const oldProgressBar = document.getElementById('progress-bar-fill');
-    if (oldProgressBar) {
-        observer.observe(oldProgressBar, { attributes: true, attributeFilter: ['style'] });
-    }
-}, 100);
+// Update progress on load and every 30 seconds
+updateProgress();
+setInterval(updateProgress, 30000);
+
 </script>
 <script src="js/notifications.js"></script>
 </body>

@@ -18,7 +18,6 @@ try {
 
 if (!empty($_POST['submit'])) {
     $_SESSION['submit'] = $_POST['submit'];
-    $name = $_POST['name'];
     $school_id = $_POST['school_id'];
     $program = $_POST['program'];
     $password = $_POST['passw'];
@@ -38,8 +37,8 @@ if (!empty($_POST['submit'])) {
         // If programs table doesn't exist, continue with login
     }
 
-    $stmt = $con->prepare("SELECT * FROM student WHERE school_id = :school_id AND name = :name AND program = :program");
-    $stmt->execute(['school_id' => $school_id, 'name' => $name, 'program' => $program]);
+    $stmt = $con->prepare("SELECT * FROM student WHERE school_id = :school_id AND program = :program");
+    $stmt->execute(['school_id' => $school_id, 'program' => $program]);
 
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -151,12 +150,7 @@ if (!empty($_POST['submit'])) {
     <div class="wrapper">
         <a href="portal.php"><i class='bx  bxs-arrow-left-stroke'  ></i></a>
         <form method="post" action="#">
-            <h1>Log In Form</h1>
-            <div class="input-box">
-                <label for="name">Student</label>
-                <input type="text" name ="name" placeholder="Enter your name" required>
-                <i class='bxr  bx-user'  ></i> 
-            </div>
+            <h1>Student</h1>
             <div class="input-box">
                 <label for="school_id">Student ID</label>
                 <input type="text" name ="school_id" placeholder="Enter your Student ID" required>
@@ -176,7 +170,7 @@ if (!empty($_POST['submit'])) {
             </div>
             <div class="input-box">
                 <label for="password">Password</label>
-                <input type="password" name="passw" placeholder="Password" required>
+                <input type="password" name="passw" placeholder="Enter your Password" required>
                 <i class='bxr  bx-lock'  ></i>
             </div>
             <div class="btn">

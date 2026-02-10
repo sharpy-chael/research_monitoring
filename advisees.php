@@ -2,59 +2,15 @@
 include("connect.php");
 session_start();
 include('php/get_setting.php');
-if (getSettingBool($con, 'maintenance_mode', false)) {
-    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'coordinator') {
-        ?>
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <link rel="stylesheet" href="css/maintenance.css">
-            <title>Maintenance Mode</title>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
-        </head>
-        <body>
-            <div class="maintenance-box">
-                <i class="ri-tools-line"></i>
-                <h1>System Under Maintenance</h1>
-                <p>We're currently performing system maintenance.</p>
-                <p>Please check back later.</p>
-                <a href="home.php">Home</a>
-            </div>
-        </body>
-        </html>
-        <?php
-        exit;
-    }
-}
-include('check_session.php');
-if (!isset($_SESSION['submit'])) {
-    header('Location: home.php');
-    exit;
-}
-$sessionUserId = $_SESSION['id'];
-$advisorStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
-$advisorStmt->execute(['id' => $sessionUserId]);
-$advisorData = $advisorStmt->fetch(PDO::FETCH_ASSOC);
-$advisorId = $advisorData['advisor_id'] ?? $sessionUserId;
-$notificationsStmt = $con->prepare("
-    SELECT id, title, message, priority, created_at, status
-    FROM system_notifications
-    WHERE (
-        recipient_type = 'all' 
-        OR recipient_type = 'advisors'
-        OR (recipient_type = 'specific' AND recipient_id = :user_id)
-    )
-    AND status != 'deleted'
-    ORDER BY created_at DESC
-    LIMIT 10
-");
-$notificationsStmt->execute([
-    'user_id' => $_SESSION['id']
-]);
-$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
-$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_milestone') {
     header('Content-Type: application/json');
+    
+    $sessionUserId = $_SESSION['id'];
+    $advisorStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
+    $advisorStmt->execute(['id' => $sessionUserId]);
+    $advisorData = $advisorStmt->fetch(PDO::FETCH_ASSOC);
+    $advisorId = $advisorData['advisor_id'] ?? $sessionUserId;
     
     $milestone_type = $_POST['milestone_type'] ?? '';
     $group_id = $_POST['group_id'] ?? null;
@@ -140,7 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ]);
         }
         else {
-            // proposal, final_defense, copyright - save to groups table
             $stmt = $con->prepare("
                 UPDATE groups 
                 SET {$milestone_type}_file_path = :file_path,
@@ -154,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'group_id' => $group_id
             ]);
             
-            // Update milestone status to completed
             $milestoneColumn = $milestone_type . '_status';
             $checkStmt = $con->prepare("SELECT group_id FROM group_milestones WHERE group_id = :group_id");
             $checkStmt->execute(['group_id' => $group_id]);
@@ -174,7 +128,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Fetch all groups assigned to this advisor
+if (getSettingBool($con, 'maintenance_mode', false)) {
+    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'coordinator') {
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <link rel="stylesheet" href="css/maintenance.css">
+            <title>Maintenance Mode</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+        </head>
+        <body>
+            <div class="maintenance-box">
+                <i class="ri-tools-line"></i>
+                <h1>System Under Maintenance</h1>
+                <p>We're currently performing system maintenance.</p>
+                <p>Please check back later.</p>
+                <a href="home.php">Home</a>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+}
+
+include('check_session.php');
+if (!isset($_SESSION['submit'])) {
+    header('Location: home.php');
+    exit;
+}
+
+$sessionUserId = $_SESSION['id'];
+$advisorStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
+$advisorStmt->execute(['id' => $sessionUserId]);
+$advisorData = $advisorStmt->fetch(PDO::FETCH_ASSOC);
+$advisorId = $advisorData['advisor_id'] ?? $sessionUserId;
+
+$notificationsStmt = $con->prepare("
+    SELECT id, title, message, priority, created_at, status
+    FROM system_notifications
+    WHERE (
+        recipient_type = 'all' 
+        OR recipient_type = 'advisors'
+        OR (recipient_type = 'specific' AND recipient_id = :user_id)
+    )
+    AND status != 'deleted'
+    ORDER BY created_at DESC
+    LIMIT 10
+");
+$notificationsStmt->execute([
+    'user_id' => $_SESSION['id']
+]);
+$notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
+$unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
+
 $groupsStmt = $con->prepare("
     SELECT g.id as group_id, g.name as group_name
     FROM groups g
@@ -184,12 +192,10 @@ $groupsStmt = $con->prepare("
 $groupsStmt->execute(['advisor_id' => $advisorId]);
 $assignedGroups = $groupsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch details for each group
 $groups = [];
 foreach ($assignedGroups as $g) {
     $groupId = $g['group_id'];
     
-    // Get leader
     $leaderStmt = $con->prepare("
         SELECT s.id, s.name, s.school_id, g.research_title, g.title_status
         FROM student s
@@ -210,7 +216,6 @@ foreach ($assignedGroups as $g) {
     $memberStmt->execute(['group_id' => $groupId]);
     $members = $memberStmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get UREC documents
     $urecDocsStmt = $con->prepare("
         SELECT id, document_type, file_path, original_filename, status, comment, uploaded_at
         FROM urec_documents
@@ -225,7 +230,6 @@ foreach ($assignedGroups as $g) {
     $urecDocsStmt->execute(['group_id' => $groupId]);
     $allUrecDocs = $urecDocsStmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get only latest document per type
     $urecDocsMap = [];
     foreach ($allUrecDocs as $doc) {
         if (!isset($urecDocsMap[$doc['document_type']])) {
@@ -234,7 +238,6 @@ foreach ($assignedGroups as $g) {
     }
     $urecDocs = array_values($urecDocsMap);
 
-    // Get proposal, final defense, copyright files from groups table
     $groupFilesStmt = $con->prepare("
         SELECT proposal_file_path, proposal_original_filename, proposal_uploaded_at,
                final_defense_file_path, final_defense_original_filename, final_defense_uploaded_at,
@@ -270,7 +273,7 @@ foreach ($assignedGroups as $g) {
             'Chapter 3' => 3,
             'Chapter 4' => 4,
             'Chapter 5' => 5,
-            'Final Research Output' => 6
+            // 'Final Research Output' => 6
         ];
         
         $uploads = array_values($uploadMap);
@@ -280,7 +283,6 @@ foreach ($assignedGroups as $g) {
             return $orderA - $orderB;
         });
         
-        // Count approved chapters
         $approvedTasks = [];
         foreach ($uploads as $upload) {
             if ($upload['status'] === 'approved') {
@@ -289,7 +291,6 @@ foreach ($assignedGroups as $g) {
         }
         $approvedCount = count($approvedTasks);
 
-        // Count approved milestones for this group
         $milestoneCountStmt = $con->prepare("
             SELECT 
                 g.title_status,
@@ -310,15 +311,13 @@ foreach ($assignedGroups as $g) {
             if ($groupMilestones['copyright_status'] === 'completed') $approvedCount++;
         }
 
-        // Count UREC documents for this group (already fetched and deduplicated)
         foreach ($urecDocs as $doc) {
             if ($doc['status'] === 'approved') {
                 $approvedCount++;
             }
         }
 
-        // Calculate progress based on 12 total requirements (6 chapters + 6 milestones)
-        $progress = round(($approvedCount / 12) * 100);
+        $progress = round(($approvedCount / 11) * 100);
     }
     
     $groups[] = [
@@ -339,19 +338,121 @@ foreach ($assignedGroups as $g) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="css/home.css">
-    
     <link rel="stylesheet" href="css/advisor.css">
     <link rel="stylesheet" href="css/notifications.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Advisees</title>
+   <style>
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+    font-size: 14px;
+}
+
+.toast-notification.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.toast-notification.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.toast-notification i {
+    font-size: 20px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-notification.removing {
+    animation: slideOut 0.3s ease-in;
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+   </style>
 </head>
 <body>
 <?php include("templates/aside_advisor.html"); ?>
 <main class="main-content">
     <h2 id="head">My Advisees</h2>
-    
+<div class="manage-section" style="margin: 30px 3px;">
+    <h2><i class="ri-global-line"></i> Manage UN SDGs</h2>
+    <div class="items-grid" id="sdgGrid">
+        <?php
+        $sdgStmt = $con->prepare("SELECT * FROM un_sdgs WHERE advisor_id = :advisor_id ORDER BY name");
+        $sdgStmt->execute(['advisor_id' => $advisorId]);
+        $mySDGs = $sdgStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach($mySDGs as $sdg):
+        ?>
+        <div class="item-card" data-id="<?= $sdg['id'] ?>">
+            <span class="item-name"><?= htmlspecialchars($sdg['name']) ?></span>
+            <i class="ri-delete-bin-line delete-icon" onclick="deleteItem('sdg', <?= $sdg['id'] ?>, this)"></i>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <div class="add-item-form">
+        <input type="text" id="newSdgName" placeholder="Enter new UN SDG name...">
+        <button onclick="addItem('sdg')"><i class="ri-add-line"></i> Add SDG</button>
+    </div>
+</div>
+
+<div class="manage-section" style="margin: 30px 3px;">
+    <h2><i class="ri-flashlight-line"></i> Manage Research Thrusts</h2>
+    <div class="items-grid" id="thrustGrid">
+        <?php
+        // Fetch Research Thrusts created by this advisor
+        $thrustStmt = $con->prepare("SELECT * FROM research_thrusts WHERE advisor_id = :advisor_id ORDER BY name");
+        $thrustStmt->execute(['advisor_id' => $advisorId]);
+        $myThrusts = $thrustStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach($myThrusts as $thrust):
+        ?>
+        <div class="item-card" data-id="<?= $thrust['id'] ?>">
+            <span class="item-name"><?= htmlspecialchars($thrust['name']) ?></span>
+            <i class="ri-delete-bin-line delete-icon" onclick="deleteItem('thrust', <?= $thrust['id'] ?>, this)"></i>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <div class="add-item-form">
+        <input type="text" id="newThrustName" placeholder="Enter new Research Thrust name...">
+        <button onclick="addItem('thrust')"><i class="ri-add-line"></i> Add Thrust</button>
+    </div>
+</div>
     <!-- My Assigned Groups Container -->
     <div class="my-groups-container">
         <div class="groups-header-wrapper">
@@ -428,38 +529,113 @@ foreach ($assignedGroups as $g) {
                                 <div class="leader-section" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 15px;">
                                     <i class="ri-alert-line" style="color: #856404;"></i>
                                     <span style="color: #856404;">No leader assigned yet</span>
-                                    <button onclick="openAddMembersModal(<?= $grp['group_id'] ?>)" style="margin-left: 10px; padding: 5px 10px; background: #ffc107; color: #000; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                    <button onclick="openAddMembersModal(<?= $grp['group_id'] ?>)" style="padding: 5px 10px; background: #ffc107; color: #000; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
                                         <i class="ri-user-add-line"></i> Add Members & Set Leader
                                     </button>
                                 </div>
                             <?php endif; ?>
                             
-                            <div class="members-section">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <h4>
-                                        <i class="ri-group-line"></i>
-                                        Members
-                                        <span class="member-count"><?= count($grp['members']) ?></span>
-                                    </h4>
-                                    <button onclick="openAddMembersModal(<?= $grp['group_id'] ?>)" style="padding: 10px 13px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; margin-bottom: 8px">
-                                        <i class="ri-user-add-line"></i> Add Members
-                                    </button>
+                            <!-- NEW COMPACT LAYOUT: Members and SDGs/Thrusts Side by Side -->
+                            <div class="members-sdg-grid">
+                                <!-- Members Section -->
+                                <div class="members-column">
+                                    <div class="column-header">
+                                        <h4>
+                                            <i class="ri-group-line"></i>
+                                            Members
+                                            <span class="member-count"><?= count($grp['members']) ?></span>
+                                        </h4>
+                                        <button id="adds" onclick="openAddMembersModal(<?= $grp['group_id'] ?>)" class="add-member-btn">
+                                            <i class="ri-user-add-line"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <?php if (!empty($grp['members'])): ?>
+                                        <div class="members-list-vertical">
+                                            <?php foreach ($grp['members'] as $member): ?>
+                                                <div class="member-item-compact">
+                                                    <i class="ri-user-3-line"></i>
+                                                    <?= htmlspecialchars($member['name']) ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="no-items-msg">
+                                            No members added yet
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                                
-                                <?php if (!empty($grp['members'])): ?>
-                                    <div class="members-grid">
-                                        <?php foreach ($grp['members'] as $member): ?>
-                                            <div class="member-item">
-                                                <i class="ri-user-3-line"></i>
-                                                <?= htmlspecialchars($member['name']) ?>
-                                            </div>
-                                        <?php endforeach; ?>
+
+                                <!-- SDGs and Thrusts Section -->
+                                <div class="sdg-column">
+                                    <?php
+                                    // Fetch assigned SDGs for this group
+                                    $groupSdgStmt = $con->prepare("
+                                        SELECT us.id, us.name 
+                                        FROM un_sdgs us
+                                        JOIN group_sdgs gs ON us.id = gs.sdg_id
+                                        WHERE gs.group_id = :group_id
+                                        ORDER BY us.name
+                                    ");
+                                    $groupSdgStmt->execute(['group_id' => $grp['group_id']]);
+                                    $assignedSdgs = $groupSdgStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                    // Fetch assigned Thrusts for this group
+                                    $groupThrustStmt = $con->prepare("
+                                        SELECT rt.id, rt.name 
+                                        FROM research_thrusts rt
+                                        JOIN group_thrusts gt ON rt.id = gt.thrust_id
+                                        WHERE gt.group_id = :group_id
+                                        ORDER BY rt.name
+                                    ");
+                                    $groupThrustStmt->execute(['group_id' => $grp['group_id']]);
+                                    $assignedThrusts = $groupThrustStmt->fetchAll(PDO::FETCH_ASSOC);
+                                    ?>
+                                    
+                                    <div class="column-header">
+                                        <h4><i class="ri-global-line"></i> UN SDGs</h4>
+                                        <button id="add" class="assign-btn-compact" onclick="openAssignModal('sdg', <?= $grp['group_id'] ?>)">
+                                            <i class="ri-add-line"></i>
+                                        </button>
                                     </div>
-                                <?php else: ?>
-                                    <div class="no-members-msg">
-                                        No members added yet
+                                    
+                                    <?php if (!empty($assignedSdgs)): ?>
+                                        <div class="tags-list-vertical">
+                                            <?php foreach($assignedSdgs as $sdg): ?>
+                                            <span class="tag-compact">
+                                                <?= htmlspecialchars($sdg['name']) ?>
+                                                <i class="ri-close-line" onclick="removeAssignment('sdg', <?= $grp['group_id'] ?>, <?= $sdg['id'] ?>, this)"></i>
+                                            </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="no-items-msg">
+                                            No SDGs assigned
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="column-header" style="margin-top: 20px;">
+                                        <h4><i class="ri-flashlight-line"></i> Research Thrusts</h4>
+                                        <button id="added" class="assign-btn-compact" onclick="openAssignModal('thrust', <?= $grp['group_id'] ?>)">
+                                            <i class="ri-add-line"></i>
+                                        </button>
                                     </div>
-                                <?php endif; ?>
+                                    
+                                    <?php if (!empty($assignedThrusts)): ?>
+                                        <div class="tags-list-vertical">
+                                            <?php foreach($assignedThrusts as $thrust): ?>
+                                            <span class="tag-compact thrust">
+                                                <?= htmlspecialchars($thrust['name']) ?>
+                                                <i class="ri-close-line" onclick="removeAssignment('thrust', <?= $grp['group_id'] ?>, <?= $thrust['id'] ?>, this)"></i>
+                                            </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="no-items-msg">
+                                            No thrusts assigned
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <!-- Milestone Documents Upload Section -->
@@ -536,9 +712,9 @@ foreach ($assignedGroups as $g) {
                                         <div class="milestone-file-details">
                                             <p><i class="ri-file-line"></i> <?= htmlspecialchars($fileName) ?></p>
                                             <p><?= $fileDate ?></p>
-                                            <a href="<?= htmlspecialchars($filePath) ?>" download>
-                                                <i class="ri-download-line"></i> Download
-                                            </a>
+                                            <button class="preview-btn" onclick="openPreview('<?= htmlspecialchars($filePath, ENT_QUOTES) ?>', '<?= htmlspecialchars($fileName, ENT_QUOTES) ?>')">
+                                                <i class="ri-eye-line"></i> Preview
+                                            </button>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -579,12 +755,22 @@ foreach ($assignedGroups as $g) {
                                                 <div class="menu-wrapper">
                                                     <i class="ri-more-2-fill menu-toggle" onclick="toggleMenu(event, this)"></i>
                                                     <div class="menu-dropdown">
-                                                        <button class="approve-btn" onclick="updateStatus(<?= $upload['upload_id'] ?>, 'approved')">
-                                                            <i class="ri-check-line"></i> Approve
-                                                        </button>
-                                                        <button class="reject-btn" onclick="updateStatus(<?= $upload['upload_id'] ?>, 'rejected')">
-                                                            <i class="ri-close-line"></i> Reject
-                                                        </button>
+                                                        <?php if ($upload['status'] !== 'approved'): ?>
+                                                            <!-- SHOW APPROVE/REJECT BUTTONS ONLY IF NOT APPROVED -->
+                                                            <button class="approve-btn" onclick="updateStatus(<?= $upload['upload_id'] ?>, 'approved')">
+                                                                <i class="ri-check-line"></i> Approve
+                                                            </button>
+                                                            <button class="reject-btn" onclick="updateStatus(<?= $upload['upload_id'] ?>, 'rejected')">
+                                                                <i class="ri-close-line"></i> Reject
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <!-- SHOW LOCKED INDICATOR IF ALREADY APPROVED -->
+                                                            <div style="padding: 8px 12px; color: #28a745; font-size: 13px; border-bottom: 1px solid #e9ecef;">
+                                                                <i class="ri-lock-line"></i> Approved - Locked
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        
+                                                        <!-- THESE BUTTONS REMAIN VISIBLE FOR ALL STATUSES -->
                                                         <button class="comment-btn" onclick="openCommentModal(<?= $upload['upload_id'] ?>, '<?= htmlspecialchars($upload['task_name'], ENT_QUOTES) ?>', '<?= htmlspecialchars($upload['comment'] ?? '', ENT_QUOTES) ?>')">
                                                             <i class="ri-chat-3-line"></i> <?= !empty($upload['comment']) ? 'Edit Comment' : 'Add Comment' ?>
                                                         </button>
@@ -630,6 +816,7 @@ foreach ($assignedGroups as $g) {
             </div>
         <?php endif; ?>
     </div>
+    
     <div style="height: 50px;" class="space"></div>
 </main>
 
@@ -670,6 +857,33 @@ foreach ($assignedGroups as $g) {
         </div>
     </div>
 </div>
+<!-- Document Preview Modal -->
+<div id="documentPreviewModal" class="preview-modal">
+    <div class="preview-modal-content">
+        <div class="preview-header">
+            <h3 id="previewTitle">Document Preview</h3>
+            <div class="preview-actions">
+                <a id="downloadLinkBtn" href="#" download class="download-link-btn">
+                    <i class="ri-download-line"></i> Download
+                </a>
+                <button class="preview-close" onclick="closePreviewModal()">×</button>
+            </div>
+        </div>
+        <div id="previewContent" class="preview-content">
+            <div class="preview-loading">
+                <i class="ri-loader-4-line" style="font-size: 48px; animation: spin 1s linear infinite;"></i>
+                <p>Loading preview...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
 
 <!-- Milestone Upload Modal -->
 <div class="comment-modal" id="milestoneUploadModal">
@@ -695,214 +909,24 @@ foreach ($assignedGroups as $g) {
         </div>
     </div>
 </div>
+<!-- Assignment Modal -->
+<div id="assignModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAssignModal()">×</span>
+        <h3 id="assignModalTitle">Assign</h3>
+        
+        <div id="assignCheckboxes" style="max-height: 300px; overflow-y: auto; padding: 10px;">
+            <!-- Checkboxes will be populated here -->
+        </div>
+
+        <button onclick="submitAssignment()" style="margin-top: 15px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Assign Selected
+        </button>
+    </div>
+</div>
 
 <script src="js/timeout.js"></script>
-<script>
-function toggleGroupDetails(icon) {
-    const card = icon.closest('.group-card');
-    const details = card.querySelector('.group-details');
-    icon.classList.toggle('expanded');
-    details.classList.toggle('expanded');
-}
-
-function toggleMenu(event, element) {
-    event.stopPropagation();
-    const menu = element.nextElementSibling;
-    document.querySelectorAll('.menu-dropdown').forEach(m => { if (m !== menu) m.classList.remove('show'); });
-    menu.classList.toggle('show');
-}
-
-document.addEventListener('click', () => {
-    document.querySelectorAll('.menu-dropdown').forEach(menu => { menu.classList.remove('show'); });
-});
-
-// Create Group Modal Functions
-function openCreateGroupModal() {
-    document.getElementById('newGroupName').value = '';
-    document.getElementById('createGroupModal').classList.add('show');
-}
-
-function closeCreateGroupModal() {
-    document.getElementById('createGroupModal').classList.remove('show');
-}
-
-async function submitCreateGroup() {
-    const groupName = document.getElementById('newGroupName').value.trim();
-    if (!groupName) {
-        alert('Please enter a group name');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('action', 'create_group');
-    formData.append('group_name', groupName);
-
-    try {
-        const response = await fetch('php/assign_group_roles.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            alert('Group created successfully!');
-            location.reload();
-        } else {
-            alert(data.message || 'Failed to create group');
-        }
-    } catch (error) {
-        alert('Error creating group: ' + error.message);
-    }
-}
-
-// Add Members Modal Functions
-let currentGroupIdForMembers = null;
-
-function openAddMembersModal(groupId) {
-    currentGroupIdForMembers = groupId;
-    document.getElementById('leaderSchoolId').value = '';
-    document.getElementById('memberSchoolIds').value = '';
-    document.getElementById('addMembersModal').classList.add('show');
-}
-
-function closeAddMembersModal() {
-    document.getElementById('addMembersModal').classList.remove('show');
-    currentGroupIdForMembers = null;
-}
-
-async function submitAddMembers() {
-    const leaderId = document.getElementById('leaderSchoolId').value.trim();
-    const memberIds = document.getElementById('memberSchoolIds').value.trim();
-
-    if (!leaderId && !memberIds) {
-        alert('Please enter at least a leader or member school IDs');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('action', 'add_members');
-    formData.append('group_id', currentGroupIdForMembers);
-    formData.append('leader_id', leaderId);
-    formData.append('member_ids', memberIds);
-
-    try {
-        const response = await fetch('php/assign_group_roles.php', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            alert(data.message || 'Members added successfully!');
-            location.reload();
-        } else {
-            alert(data.message || 'Failed to add members');
-        }
-    } catch (error) {
-        alert('Error adding members: ' + error.message);
-    }
-}
-
-async function updateStatus(uploadId, status) {
-    if (!confirm(`Are you sure you want to ${status} this file?`)) return;
-    const formData = new FormData();
-    formData.append('upload_id', uploadId);
-    formData.append('status', status);
-    try {
-        const response = await fetch('php/update_upload_status.php', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (data.success) { alert(`File ${status} successfully!`); location.reload(); }
-        else { alert(data.message || 'Failed to update status'); }
-    } catch (error) { alert('Error updating status: ' + error.message); }
-}
-
-let currentUploadId = null;
-function openCommentModal(uploadId, taskName, currentComment) {
-    currentUploadId = uploadId;
-    document.getElementById('commentModalTitle').textContent = `Comment on ${taskName}`;
-    document.getElementById('commentText').value = currentComment || '';
-    document.getElementById('commentModal').classList.add('show');
-}
-
-function closeCommentModal() {
-    document.getElementById('commentModal').classList.remove('show');
-    currentUploadId = null;
-}
-
-async function submitComment() {
-    const comment = document.getElementById('commentText').value.trim();
-    if (!comment) { alert('Please enter a comment'); return; }
-    const formData = new FormData();
-    formData.append('upload_id', currentUploadId);
-    formData.append('comment', comment);
-    try {
-        const response = await fetch('php/update_upload_comment.php', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (data.success) { alert('Comment added successfully!'); closeCommentModal(); location.reload(); }
-        else { alert(data.message || 'Failed to add comment'); }
-    } catch (error) { alert('Error adding comment: ' + error.message); }
-}
-
-let currentMilestoneType = null;
-let currentMilestoneGroupId = null;
-function openMilestoneUploadModal(type, label, groupId) {
-    currentMilestoneType = type;
-    currentMilestoneGroupId = groupId;
-    document.getElementById('milestoneUploadTitle').textContent = `Upload ${label}`;
-    document.getElementById('milestoneFileInput').value = '';
-    document.getElementById('milestoneUploadModal').classList.add('show');
-}
-
-function closeMilestoneUploadModal() {
-    document.getElementById('milestoneUploadModal').classList.remove('show');
-    currentMilestoneType = null;
-    currentMilestoneGroupId = null;
-}
-
-async function submitMilestoneUpload() {
-    const fileInput = document.getElementById('milestoneFileInput');
-    if (!fileInput.files[0]) { alert('Please select a file'); return; }
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('milestone_type', currentMilestoneType);
-    formData.append('group_id', currentMilestoneGroupId);
-    formData.append('action', 'upload_milestone');
-    try {
-        const response = await fetch('advisees.php', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (data.success) { alert('File uploaded successfully!'); location.reload(); }
-        else { alert(data.message || 'Failed to upload file'); }
-    } catch (error) { alert('Error uploading file: ' + error.message); }
-}
-
-let currentTitleGroupId = null;
-function openTitleModal(groupId, currentTitle) {
-    currentTitleGroupId = groupId;
-    document.getElementById('advisorTitleInput').value = currentTitle || '';
-    document.getElementById('advisorTitleModal').classList.add('show');
-}
-
-function closeAdvisorTitleModal() {
-    document.getElementById('advisorTitleModal').classList.remove('show');
-    currentTitleGroupId = null;
-}
-
-async function submitAdvisorTitle() {
-    const title = document.getElementById('advisorTitleInput').value.trim();
-    if (!title) { alert('Please enter a title'); return; }
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('milestone_type', 'title');
-    formData.append('group_id', currentTitleGroupId);
-    formData.append('action', 'upload_milestone');
-    try {
-        const response = await fetch('advisees.php', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (data.success) { alert('Title saved successfully!'); location.reload(); }
-        else { alert(data.message || 'Failed to save title'); }
-    } catch (error) { alert('Error saving title: ' + error.message); }
-}
-</script>
+<script src="js/advisees.js"></script>
 <script src="js/notifications.js"></script>
 </body>
 </html>

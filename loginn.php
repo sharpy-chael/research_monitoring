@@ -65,20 +65,20 @@ if (!empty($_POST['submit'])) {
     <div class="wrap">
          <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
             <form action="" method="post">
-                <h1>Log In Form</h1>
+                <h1>Advisor</h1>
                 <div class="inputed">
-                    <label for="name">Name</label>
-                    <input type="text" name="name" placeholder="Name" required>
+                    <label for="name">Username</label>
+                    <input type="text" name="name" placeholder="Enter your Username" required>
                     <i class='bxr bx-user'></i>
                 </div>
                 <div class="inputed">
                     <label for="advisor_id">Advisor ID</label>
-                    <input type="text" name="advisor_id" placeholder="Advisor ID" required>
+                    <input type="text" name="advisor_id" placeholder="Enter your ID" required>
                     <i class='bxr  bx-user-id-card'></i> 
                 </div>
                 <div class="inputed">
                     <label for="password">Password</label>
-                    <input type="password" name="password" placeholder="Password" required>
+                    <input type="password" name="password" placeholder="Enter your Password" required>
                     <i class='bxr bx-lock'></i>
                 </div>
                 <div class="btn">

@@ -462,14 +462,19 @@ async function openSettingsModal() {
                     <label for="setting_${setting.setting_key}">${setting.description}</label>`;
             
             if (setting.setting_type === 'boolean') {
-                const checked = setting.setting_value === 'true' ? 'checked' : '';
-                settingsHtml += `
-                    <input type="checkbox" 
-                           id="setting_${setting.setting_key}" 
-                           name="${setting.setting_key}" 
-                           ${checked}>
-                `;
-            } else {
+                    const checked = setting.setting_value === 'true' ? 'checked' : '';
+                    settingsHtml += `
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" 
+                                id="setting_${setting.setting_key}" 
+                                name="${setting.setting_key}" 
+                                ${checked}>
+                            <label for="setting_${setting.setting_key}" style="font-weight: normal; cursor: pointer;">
+                                Enable this option
+                            </label>
+                        </div>
+                    `;
+                } else {
                 settingsHtml += `
                     <input type="${setting.setting_type === 'integer' ? 'number' : 'text'}" 
                            id="setting_${setting.setting_key}" 
