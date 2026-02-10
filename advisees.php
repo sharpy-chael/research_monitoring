@@ -497,7 +497,6 @@ foreach ($assignedGroups as $g) {
                         <i class="ri-arrow-right-s-line expand-icon" onclick="toggleGroupDetails(this)"></i>
                     </div>
 
-                        <!-- Research Title Section - Advisor can set/edit -->
                         <div class="title-section" style="margin-bottom:10px; padding:12px; border:1px solid #ddd; border-radius:6px; background-color:#f8f9fa;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
@@ -535,7 +534,6 @@ foreach ($assignedGroups as $g) {
                                 </div>
                             <?php endif; ?>
                             
-                            <!-- NEW COMPACT LAYOUT: Members and SDGs/Thrusts Side by Side -->
                             <div class="members-sdg-grid">
                                 <!-- Members Section -->
                                 <div class="members-column">
@@ -566,7 +564,6 @@ foreach ($assignedGroups as $g) {
                                     <?php endif; ?>
                                 </div>
 
-                                <!-- SDGs and Thrusts Section -->
                                 <div class="sdg-column">
                                     <?php
                                     // Fetch assigned SDGs for this group
@@ -580,7 +577,6 @@ foreach ($assignedGroups as $g) {
                                     $groupSdgStmt->execute(['group_id' => $grp['group_id']]);
                                     $assignedSdgs = $groupSdgStmt->fetchAll(PDO::FETCH_ASSOC);
 
-                                    // Fetch assigned Thrusts for this group
                                     $groupThrustStmt = $con->prepare("
                                         SELECT rt.id, rt.name 
                                         FROM research_thrusts rt
@@ -609,9 +605,7 @@ foreach ($assignedGroups as $g) {
                                             <?php endforeach; ?>
                                         </div>
                                     <?php else: ?>
-                                        <div class="no-items-msg">
-                                            No SDGs assigned
-                                        </div>
+                                        <div class="no-items-msg">No SDGs assigned</div>
                                     <?php endif; ?>
 
                                     <div class="column-header" style="margin-top: 20px;">
@@ -631,14 +625,10 @@ foreach ($assignedGroups as $g) {
                                             <?php endforeach; ?>
                                         </div>
                                     <?php else: ?>
-                                        <div class="no-items-msg">
-                                            No thrusts assigned
-                                        </div>
+                                        <div class="no-items-msg">No thrusts assigned</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
-
-                            <!-- Milestone Documents Upload Section -->
                             <div class="uploads-section" style="margin-top: 20px;">
                                 <h4>
                                     <i class="ri-folder-upload-line"></i>
@@ -655,7 +645,6 @@ foreach ($assignedGroups as $g) {
                                 ];
                                 
                                 foreach ($milestoneTypes as $m):
-                                    // Check if file exists
                                     $hasFile = false;
                                     $fileName = '';
                                     $fileDate = '';

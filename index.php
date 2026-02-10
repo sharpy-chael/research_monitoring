@@ -3,7 +3,6 @@ include("connect.php");
 session_start();
 include('php/get_setting.php');
 
-// Authorization check FIRST
 if (!isset($_SESSION['submit'])) {
     header('Location: home.php');
     exit;
@@ -11,7 +10,6 @@ if (!isset($_SESSION['submit'])) {
 
 $school_id = $_SESSION['school_id'];
 
-// Check session timeout
 $sessionTimeoutMinutes = getSettingInt($con, 'session_timeout', 30);
 $sessionTimeoutSeconds = $sessionTimeoutMinutes * 60;
 
@@ -29,7 +27,6 @@ if (isset($_SESSION['last_activity'])) {
 }
 $_SESSION['last_activity'] = time();
 
-// Check maintenance mode
 if (getSettingBool($con, 'maintenance_mode', false)) {
     ?>
     <!DOCTYPE html>
@@ -53,7 +50,6 @@ if (getSettingBool($con, 'maintenance_mode', false)) {
     exit;
 }
 
-// Fetch notifications for the current user
 $notificationsStmt = $con->prepare("
     SELECT id, title, message, priority, created_at, status
     FROM system_notifications
@@ -71,12 +67,8 @@ $notificationsStmt->execute([
 ]);
 $notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Count unread notifications
 $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
-/* ===========================
-   GET GROUP & ROLE
-=========================== */
 $stmt = $con->prepare("
     SELECT s.group_id, s.is_leader, g.research_title, g.title_status
     FROM student s
@@ -93,13 +85,6 @@ $titleStatus = $user['title_status'] ?? 'missing';
 
 $_SESSION['research_title'] = $groupTitle;
 
-/* ===========================
-   CALCULATE GROUP PROGRESS
-=========================== */
-/* ===========================
-   CALCULATE GROUP PROGRESS (Chapters + Milestones)
-=========================== */
-// Count approved chapters
 $progressStmt = $con->prepare("
     SELECT task_name, status
     FROM uploads
@@ -111,7 +96,6 @@ $progressStmt = $con->prepare("
 $progressStmt->execute(['group_id' => $group_id]);
 $allUploads = $progressStmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* latest upload per task */
 $uploadMap = [];
 foreach ($allUploads as $upload) {
     if (!isset($uploadMap[$upload['task_name']])) {
@@ -119,7 +103,6 @@ foreach ($allUploads as $upload) {
     }
 }
 
-/* count approved chapters */
 $approvedCount = 0;
 foreach ($uploadMap as $upload) {
     if ($upload['status'] === 'approved') {
@@ -127,7 +110,6 @@ foreach ($uploadMap as $upload) {
     }
 }
 
-// Count approved milestones
 $milestoneStmt = $con->prepare("
     SELECT 
         g.title_status,
@@ -141,7 +123,6 @@ $milestoneStmt = $con->prepare("
 $milestoneStmt->execute(['group_id' => $group_id]);
 $milestones = $milestoneStmt->fetch(PDO::FETCH_ASSOC);
 
-// Count approved milestones
 if ($milestones) {
     if ($milestones['title_status'] === 'approved') $approvedCount++;
     if ($milestones['proposal_status'] === 'completed') $approvedCount++;
@@ -149,7 +130,6 @@ if ($milestones) {
     if ($milestones['copyright_status'] === 'completed') $approvedCount++;
 }
 
-// Count UREC documents
 $urecStmt = $con->prepare("
     SELECT document_type, status
     FROM urec_documents
@@ -173,7 +153,6 @@ if (isset($urecMap['UREC Clearance']) && $urecMap['UREC Clearance']['status'] ==
     $approvedCount++;
 }
 
-// Calculate percentage based on 12 total items (6 chapters + 6 milestones)
 $progressPercentage = round(($approvedCount / 11) * 100);
 ?>
 <!DOCTYPE html>
@@ -244,7 +223,6 @@ $progressPercentage = round(($approvedCount / 11) * 100);
         </div>
     </div>
 
-    <!-- Analytics Section -->
     <div class="analytics-section-student">
         <div class="chart-container-student">
             <div class="chart-header-student">
@@ -260,7 +238,6 @@ $progressPercentage = round(($approvedCount / 11) * 100);
 </main>
 
 <script>
-// Display current date
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
 document.getElementById('currentDateStudent').textContent = currentDate;

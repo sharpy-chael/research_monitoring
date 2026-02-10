@@ -1757,13 +1757,13 @@ html, body {
     min-height: 100vh;
   }
 
-  .main-content h1 {
-    font-size: 28px;
+  .main-content #head {
+    font-size: 30px;
     font-weight: 700;
     margin-bottom: 12px;
     color: #ffffff;
     background-color: #a00000;
-    padding: 7px 10px;
+    padding: 11px 22px;
     border-radius: 9px;
   }
 

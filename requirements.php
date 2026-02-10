@@ -158,7 +158,6 @@ foreach ($uploads as $upload) {
     }
 }
 
-// Task order
 $tasks = [
     "Chapter 1",
     "Chapter 2",

@@ -85,9 +85,55 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/setup.css">
     <title>Monitoring Reports</title>
+    <style>
+    .toast {
+        position: fixed;
+        top: 30px;
+        right: 30px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+        z-index: 99999;
+        opacity: 0;
+        transform: translateY(-16px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        pointer-events: none;
+        max-width: 320px;
+    }
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .toast.success {
+        background: linear-gradient(135deg, #38a169 0%, #276749 100%);
+    }
+    .toast.error {
+        background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+    }
+    .toast i {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    @media (max-width: 768px) {
+        .toast {
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            max-width: none;
+        }
+    }
+    </style>
 </head>
 <body>
     <?php include("templates/aside_coordinator.html"); ?>
+
+    <div id="exportToast" class="toast" role="alert" aria-live="polite"></div>
     
     <main class="main-content">
         <h1 id="head"><i class="ri-file-chart-line"></i> Monitoring Reports</h1>
@@ -220,6 +266,16 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
     </main>
 
     <script>
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('exportToast');
+        const icon = type === 'success' ? 'ri-checkbox-circle-line' : 'ri-close-circle-line';
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+        toast.classList.add('show');
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
     async function exportReport(type) {
         try {
             const response = await fetch('php/export_report.php', {
@@ -228,7 +284,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                 body: `type=${type}`
             });
             
-            if (!response.ok) throw new Error('Export failed');
+            if (!response.ok) throw new Error('Server returned ' + response.status);
             
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -239,10 +295,11 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
             a.click();
             window.URL.revokeObjectURL(url);
             a.remove();
-            
-            alert('Report exported successfully!');
+
+            const labels = { status: 'Status', sdg: 'SDG', thrust: 'Thrust', full: 'Full' };
+            showToast(`${labels[type] ?? 'Report'} report downloaded successfully!`, 'success');
         } catch (error) {
-            alert('Error exporting report: ' + error.message);
+            showToast('Export failed: ' + error.message, 'error');
         }
     }
     </script>
