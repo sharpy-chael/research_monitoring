@@ -1,4 +1,3 @@
-/** AUTO FADE-OUT FOR GENERIC MESSAGES **/
 ['.error-message', '.success-message'].forEach(selector => {
     setTimeout(() => {
         const msg = document.querySelector(selector);
@@ -9,8 +8,6 @@
     }, 5000);
 });
 
-
-/** PASSWORD CHANGE MESSAGE HANDLING **/
 document.getElementById("changePasswordForm")?.addEventListener("submit", async function (e) {
     e.preventDefault();
 

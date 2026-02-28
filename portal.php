@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+    <!-- Background grid overlay -->
+    <div class="body-grid"></div>
+
     <header class="header">
         <img src="images/logo.png" alt="PUP Logo" class="logo">
         <h1>POLYTECHNIC UNIVERSITY OF THE PHILIPPINES</h1>
@@ -32,7 +35,7 @@
             </div>
             <div class="portal-card coordinator">
                 <div class="card-header">
-                    <img src="images/man.png" alt="Admin Icon" class="admin">
+                    <img src="images/man.png" alt="Coordinator Icon" class="admin">
                     <p>Coordinator</p>
                 </div>
                 <div class="card-body">
@@ -57,7 +60,6 @@
                     <a href="login.php" class="btn btn-login">LOGIN</a>
                 </div>
             </div>
-
         </div>
     </main>
 

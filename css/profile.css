@@ -519,14 +519,14 @@ body {
   position: relative;
   background: #fff;
   border-radius: 16px;
-  padding: 35px 40px;
+  padding: 0;
   width: 450px;
   max-width: 90%;
+  max-height: 80vh;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
   animation: modalSlideUp 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 18px;
 }
 
 @keyframes modalSlideUp {
@@ -540,21 +540,55 @@ body {
   }
 }
 
+.modal-header {
+  padding: 20px 35px 0;
+  flex-shrink: 0;
+}
+
+.modal-body {
+  padding: 10px 35px 25px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #a30000;
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #870000;
+}
+
+.modal-footer {
+  padding: 0 35px 25px;
+  flex-shrink: 0;
+}
+
 .edit-modal-content h2,
 .change-modal-content h2 {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: #a30000;
   text-align: center;
-  margin-bottom: 10px;
+  margin: 0 0 10px;
 }
 
 .edit-modal-content label,
 .change-modal-content label {
   font-weight: 500;
-  font-size: 14px;
-  margin-top: 12px;
-  margin-bottom: 6px;
+  font-size: 13px;
+  margin-top: 10px;
+  margin-bottom: 5px;
   color: #444;
   display: block;
 }
@@ -564,13 +598,14 @@ body {
 .edit-modal-content input[type="file"],
 .change-modal-content input[type="password"] {
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #ddd;
   background: #f9f9f9;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .edit-modal-content input[type="text"]:focus,
@@ -584,7 +619,7 @@ body {
 }
 
 .edit-modal-content input[type="file"] {
-  padding: 10px;
+  padding: 8px 10px;
   background: #fff;
   border: 2px dashed #ddd;
   cursor: pointer;
@@ -766,8 +801,19 @@ body {
 
   .edit-modal-content,
   .change-modal-content {
-    padding: 30px 25px;
     width: 90%;
+    max-height: 85vh;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+
+  .modal-body {
+    padding-left: 25px;
+    padding-right: 25px;
   }
 
   .edit-modal-content h2,
@@ -855,9 +901,15 @@ body {
     font-size: 13px;
   }
 
-  .edit-modal-content,
-  .change-modal-content {
-    padding: 25px 20px;
+  .modal-header,
+  .modal-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .modal-body {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .close-btn {
@@ -879,6 +931,5 @@ body {
   .edit-modal-content,
   .change-modal-content {
     max-height: 90vh;
-    overflow-y: auto;
   }
 }

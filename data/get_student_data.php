@@ -1,5 +1,4 @@
 <?php
-// Prevent any output before JSON
 ob_start();
 
 header("Access-Control-Allow-Origin: *");
@@ -7,9 +6,8 @@ header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
 
-// Error handling - catch errors and return as JSON
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't display errors in output
+ini_set('display_errors', 0);
 
 try {
     include(__DIR__ . "/../connect.php");
@@ -21,294 +19,204 @@ try {
 
     $school_id = $_SESSION['school_id'];
 
-    // Get student's group
-    $groupStmt = $con->prepare("
-        SELECT group_id 
-        FROM student 
-        WHERE school_id = :school_id
-    ");
+    // Get student's current group
+    $groupStmt = $con->prepare("SELECT group_id FROM student WHERE school_id = :school_id LIMIT 1");
     $groupStmt->execute(['school_id' => $school_id]);
-    $student = $groupStmt->fetch(PDO::FETCH_ASSOC);
+    $studentRow = $groupStmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$student || !$student['group_id']) {
+    if (!$studentRow || !$studentRow['group_id']) {
         ob_end_clean();
         echo json_encode([
-            'line' => [
-                'labels' => ['No Data'],
-                'data' => [0]
-            ],
-            'pie' => [
-                'labels' => ['Approved', 'Pending', 'Rejected', 'Missing'],
-                'data' => [0, 0, 0, 12]
-            ]
+            'line' => ['labels' => ['No Data'], 'datasets' => []],
+            'pie'  => ['labels' => ['Approved', 'Pending', 'Rejected', 'Missing'], 'data' => [0, 0, 0, 10]]
         ]);
         exit;
     }
 
-    $group_id = $student['group_id'];
+    $current_group_id = $studentRow['group_id'];
 
-    // Get current milestone statuses
-    // Get current milestone statuses
-$milestoneStmt = $con->prepare("
-    SELECT 
-        g.research_title,
-        g.title_status,
-        g.proposal_uploaded_at,
-        g.final_defense_uploaded_at,
-        g.copyright_uploaded_at,
-        gm.proposal_status,
-        gm.final_defense_status,
-        gm.copyright_status,
-        gm.created_at
-    FROM groups g
-    LEFT JOIN group_milestones gm ON g.id = gm.group_id
-    WHERE g.id = :group_id
-");
-    $milestoneStmt->execute(['group_id' => $group_id]);
-    $milestones = $milestoneStmt->fetch(PDO::FETCH_ASSOC);
-
-    // Get UREC documents status
-    $urecStmt = $con->prepare("
-        SELECT document_type, status, uploaded_at
-        FROM urec_documents
-        WHERE group_id = :group_id
-        ORDER BY uploaded_at DESC
-    ");
-    $urecStmt->execute(['group_id' => $group_id]);
-    $urecDocs = $urecStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Get latest UREC docs per type
-    $urecMap = [];
-    foreach ($urecDocs as $doc) {
-        if (!isset($urecMap[$doc['document_type']])) {
-            $urecMap[$doc['document_type']] = $doc;
-        }
-    }
-
-    // LINE CHART: Collect all events (chapters + milestones) with dates
+    // LINE CHART: single group timeline
     $timelineEvents = [];
 
-    // Add chapter uploads
-    $lineStmt = $con->prepare("
-        SELECT 
-            DATE(uploaded_at) as upload_date,
-            uploaded_at,
-            task_name,
-            status
-        FROM uploads
-        WHERE school_id IN (
-            SELECT school_id FROM student WHERE group_id = :group_id
-        )
-        ORDER BY uploaded_at ASC
+    $manuStmt = $con->prepare("
+        SELECT uploaded_at FROM uploads
+        WHERE school_id = :school_id AND status = 'approved'
+        ORDER BY uploaded_at ASC LIMIT 1
     ");
-    $lineStmt->execute(['group_id' => $group_id]);
-    $chapterUploads = $lineStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($chapterUploads as $row) {
-        if ($row['status'] === 'approved') {
-            $timelineEvents[] = [
-                'date' => $row['uploaded_at'],
-                'type' => 'chapter',
-                'name' => $row['task_name']
-            ];
-        }
+    $manuStmt->execute(['school_id' => $school_id]);
+    $firstApproved = $manuStmt->fetch(PDO::FETCH_ASSOC);
+    if ($firstApproved) {
+        $timelineEvents[] = ['date' => $firstApproved['uploaded_at'], 'name' => 'Full Manuscript'];
     }
 
-    // Add milestone events
+    $milestoneStmt = $con->prepare("
+        SELECT g.research_title, g.title_status,
+               g.proposal_uploaded_at, g.final_defense_uploaded_at,
+               g.applied_copyright_uploaded_at, g.research_presented_uploaded_at,
+               g.research_published_uploaded_at, g.copyright_approved_uploaded_at,
+               gm.proposal_status, gm.final_defense_status, gm.applied_copyright_status,
+               gm.research_presented_status, gm.research_published_status,
+               gm.copyright_approved_status, gm.created_at
+        FROM groups g
+        LEFT JOIN group_milestones gm ON g.id = gm.group_id
+        WHERE g.id = :group_id
+    ");
+    $milestoneStmt->execute(['group_id' => $current_group_id]);
+    $milestones = $milestoneStmt->fetch(PDO::FETCH_ASSOC);
+
+    $urecStmt = $con->prepare("
+        SELECT document_type, status, uploaded_at FROM urec_documents
+        WHERE group_id = :group_id ORDER BY uploaded_at DESC
+    ");
+    $urecStmt->execute(['group_id' => $current_group_id]);
+    $urecMap = [];
+    foreach ($urecStmt->fetchAll(PDO::FETCH_ASSOC) as $doc) {
+        if (!isset($urecMap[$doc['document_type']])) $urecMap[$doc['document_type']] = $doc;
+    }
+
     if ($milestones) {
-        // Title
         if (!empty($milestones['research_title']) && $milestones['title_status'] === 'approved') {
-            $timelineEvents[] = [
-                'date' => $milestones['created_at'] ?? date('Y-m-d H:i:s'),
-                'type' => 'milestone',
-                'name' => 'Title'
-            ];
+            $timelineEvents[] = ['date' => $milestones['created_at'] ?? date('Y-m-d H:i:s'), 'name' => 'Title'];
         }
-        
-        // Proposal
-        if ($milestones['proposal_uploaded_at'] && 
-            (!empty($milestones['proposal_status']) && $milestones['proposal_status'] === 'completed')) {
-            $timelineEvents[] = [
-                'date' => $milestones['proposal_uploaded_at'],
-                'type' => 'milestone',
-                'name' => 'Proposal'
-            ];
-        }
-        
-        // Final Defense
-        if ($milestones['final_defense_uploaded_at'] && 
-            (!empty($milestones['final_defense_status']) && $milestones['final_defense_status'] === 'completed')) {
-            $timelineEvents[] = [
-                'date' => $milestones['final_defense_uploaded_at'],
-                'type' => 'milestone',
-                'name' => 'Final Defense'
-            ];
-        }
-        
-        // Copyright
-        if ($milestones['copyright_uploaded_at'] && 
-            (!empty($milestones['copyright_status']) && $milestones['copyright_status'] === 'completed')) {
-            $timelineEvents[] = [
-                'date' => $milestones['copyright_uploaded_at'],
-                'type' => 'milestone',
-                'name' => 'Copyright/IP'
-            ];
-        }
-    }
-
-    // Add UREC documents
-    if (isset($urecMap['UREC Form']) && $urecMap['UREC Form']['status'] === 'approved') {
-        $timelineEvents[] = [
-            'date' => $urecMap['UREC Form']['uploaded_at'],
-            'type' => 'milestone',
-            'name' => 'UREC Form'
+        $milestoneMap = [
+            'Proposal'              => ['date_col' => 'proposal_uploaded_at',           'status_col' => 'proposal_status'],
+            'Final Defense'         => ['date_col' => 'final_defense_uploaded_at',      'status_col' => 'final_defense_status'],
+            'Applied for Copyright' => ['date_col' => 'applied_copyright_uploaded_at',  'status_col' => 'applied_copyright_status'],
+            'Research Presented'    => ['date_col' => 'research_presented_uploaded_at', 'status_col' => 'research_presented_status'],
+            'Research Published'    => ['date_col' => 'research_published_uploaded_at', 'status_col' => 'research_published_status'],
+            'Copyright Approved'    => ['date_col' => 'copyright_approved_uploaded_at', 'status_col' => 'copyright_approved_status'],
         ];
+        foreach ($milestoneMap as $label => $cols) {
+            if (!empty($milestones[$cols['date_col']]) && ($milestones[$cols['status_col']] ?? '') === 'completed') {
+                $timelineEvents[] = ['date' => $milestones[$cols['date_col']], 'name' => $label];
+            }
+        }
     }
 
-    if (isset($urecMap['UREC Clearance']) && $urecMap['UREC Clearance']['status'] === 'approved') {
-        $timelineEvents[] = [
-            'date' => $urecMap['UREC Clearance']['uploaded_at'],
-            'type' => 'milestone',
-            'name' => 'UREC Clearance'
-        ];
-    }
+    if (isset($urecMap['UREC Form']) && $urecMap['UREC Form']['status'] === 'approved')
+        $timelineEvents[] = ['date' => $urecMap['UREC Form']['uploaded_at'], 'name' => 'UREC Form'];
+    if (isset($urecMap['UREC Clearance']) && $urecMap['UREC Clearance']['status'] === 'approved')
+        $timelineEvents[] = ['date' => $urecMap['UREC Clearance']['uploaded_at'], 'name' => 'UREC Clearance'];
 
-    // Sort timeline by date
-    usort($timelineEvents, function($a, $b) {
-        return strtotime($a['date']) - strtotime($b['date']);
-    });
+    usort($timelineEvents, fn($a, $b) => strtotime($a['date']) - strtotime($b['date']));
 
-    // Build line chart data
-    $lineData = ['labels' => [], 'data' => []];
-    $completedItems = [];
-    $totalItems = 12; // 6 chapters + 6 milestones
-
+    $allDates = []; $progressByDate = []; $completedItems = [];
     foreach ($timelineEvents as $event) {
-        $itemKey = $event['name'];
-        
-        if (!isset($completedItems[$itemKey])) {
-            $completedItems[$itemKey] = true;
-            
-            $completedCount = count($completedItems);
-            $progressPercent = round(($completedCount / $totalItems) * 100, 1);
-            
-            $lineData['labels'][] = date("M d", strtotime($event['date']));
-            $lineData['data'][] = $progressPercent;
+        if (!isset($completedItems[$event['name']])) {
+            $completedItems[$event['name']] = true;
+            $date = date("Y-m-d", strtotime($event['date']));
+            $progressByDate[$date] = round((count($completedItems) / 10) * 100, 1);
+            if (!in_array($date, $allDates)) $allDates[] = $date;
         }
     }
+    sort($allDates);
 
-    // If no data, show empty state
-    if (empty($lineData['labels'])) {
-        $lineData = [
-            'labels' => ['Start'],
-            'data' => [0]
+    $data = []; $lastProgress = 0;
+    foreach ($allDates as $date) {
+        if (isset($progressByDate[$date])) $lastProgress = $progressByDate[$date];
+        $data[] = $lastProgress;
+    }
+
+    $formattedDates = array_map(fn($d) => date("M d", strtotime($d)), $allDates);
+    $datasets = [];
+    if (!empty($allDates)) {
+        $datasets[] = [
+            'label'           => 'Progress',
+            'data'            => $data,
+            'borderColor'     => 'rgb(139, 0, 0)',
+            'backgroundColor' => 'rgba(139, 0, 0, 0.15)',
+            'fill'            => false,
+            'tension'         => 0.3,
+            'borderWidth'     => 3,
         ];
+    } else {
+        $formattedDates = ['Start'];
     }
 
-    // PIE CHART: Current status breakdown
-    // Count chapters
-    $pieStmt = $con->prepare("
-        SELECT task_name, status
-        FROM uploads
-        WHERE school_id IN (
-            SELECT school_id FROM student WHERE group_id = :group_id
-        )
-        ORDER BY uploaded_at DESC
-    ");
-    $pieStmt->execute(['group_id' => $group_id]);
-    $allUploads = $pieStmt->fetchAll(PDO::FETCH_ASSOC);
+    // PIE CHART
+    $approved = 0; $pending = 0; $rejected = 0; $missing = 0;
 
-    // Get latest upload per chapter
+    $uploadStatusStmt = $con->prepare("SELECT task_name, status FROM uploads WHERE school_id = :school_id ORDER BY uploaded_at DESC");
+    $uploadStatusStmt->execute(['school_id' => $school_id]);
     $uploadMap = [];
-    foreach ($allUploads as $upload) {
-        if (!isset($uploadMap[$upload['task_name']])) {
-            $uploadMap[$upload['task_name']] = $upload;
+    foreach ($uploadStatusStmt->fetchAll(PDO::FETCH_ASSOC) as $u) {
+        if (!isset($uploadMap[$u['task_name']])) $uploadMap[$u['task_name']] = $u;
+    }
+    if (empty($uploadMap)) {
+        $missing++;
+    } else {
+        $hasApproved = $hasPending = $hasRejected = false;
+        foreach ($uploadMap as $u) {
+            if ($u['status'] === 'approved') { $hasApproved = true; break; }
+            if ($u['status'] === 'pending')  $hasPending  = true;
+            if ($u['status'] === 'rejected') $hasRejected = true;
         }
+        if ($hasApproved)     $approved++;
+        elseif ($hasPending)  $pending++;
+        elseif ($hasRejected) $rejected++;
+        else                  $missing++;
     }
 
-    // Count chapter statuses
-    $approved = 0;
-    $pending = 0;
-    $rejected = 0;
-    $missing = 0;
+    $pieMilestoneStmt = $con->prepare("
+        SELECT g.title_status, gm.proposal_status, gm.final_defense_status,
+               gm.applied_copyright_status, gm.research_presented_status,
+               gm.research_published_status, gm.copyright_approved_status
+        FROM groups g
+        LEFT JOIN group_milestones gm ON g.id = gm.group_id
+        WHERE g.id = :group_id
+    ");
+    $pieMilestoneStmt->execute(['group_id' => $current_group_id]);
+    $pieMilestones = $pieMilestoneStmt->fetch(PDO::FETCH_ASSOC);
 
-    foreach ($uploadMap as $upload) {
-        if ($upload['status'] === 'approved') {
-            $approved++;
-        } elseif ($upload['status'] === 'pending') {
-            $pending++;
-        } elseif ($upload['status'] === 'rejected') {
-            $rejected++;
-        }
-    }
-    $missing += (6 - count($uploadMap)); // 6 chapters
-
-    // Count milestone statuses
-    $milestoneStatuses = [];
-
-    // Title
-    $milestoneStatuses['Title'] = $milestones['title_status'] ?? 'missing';
-
-    // Proposal
-    $milestoneStatuses['Proposal'] = 'missing';
-    if ($milestones && !empty($milestones['proposal_status'])) {
-        $milestoneStatuses['Proposal'] = ($milestones['proposal_status'] === 'completed') ? 'approved' : $milestones['proposal_status'];
+    $pieUrecStmt = $con->prepare("SELECT document_type, status FROM urec_documents WHERE group_id = :group_id ORDER BY uploaded_at DESC");
+    $pieUrecStmt->execute(['group_id' => $current_group_id]);
+    $pieUrecMap = [];
+    foreach ($pieUrecStmt->fetchAll(PDO::FETCH_ASSOC) as $doc) {
+        if (!isset($pieUrecMap[$doc['document_type']])) $pieUrecMap[$doc['document_type']] = $doc;
     }
 
-    // UREC Form
-    $milestoneStatuses['UREC Form'] = isset($urecMap['UREC Form']) ? $urecMap['UREC Form']['status'] : 'missing';
-
-    // UREC Clearance
-    $milestoneStatuses['UREC Clearance'] = isset($urecMap['UREC Clearance']) ? $urecMap['UREC Clearance']['status'] : 'missing';
-
-    // Final Defense
-    $milestoneStatuses['Final Defense'] = 'missing';
-    if ($milestones && !empty($milestones['final_defense_status'])) {
-        $milestoneStatuses['Final Defense'] = ($milestones['final_defense_status'] === 'completed') ? 'approved' : $milestones['final_defense_status'];
-    }
-
-    // Copyright
-    $milestoneStatuses['Copyright/IP'] = 'missing';
-    if ($milestones && !empty($milestones['copyright_status'])) {
-        $milestoneStatuses['Copyright/IP'] = ($milestones['copyright_status'] === 'completed') ? 'approved' : $milestones['copyright_status'];
-    }
-
-    // Count milestone statuses
-    foreach ($milestoneStatuses as $status) {
-        if ($status === 'approved') {
-            $approved++;
-        } elseif ($status === 'pending') {
-            $pending++;
-        } elseif ($status === 'rejected') {
-            $rejected++;
-        } else {
-            $missing++;
-        }
-    }
-
-    $response = [
-        'line' => $lineData,
-        'pie' => [
-            'labels' => ['Approved', 'Pending', 'Rejected', 'Missing'],
-            'data' => [$approved, $pending, $rejected, $missing]
-        ]
+    $milestoneStatuses = [
+        'Title'                 => $pieMilestones['title_status'] ?? 'missing',
+        'Proposal'              => 'missing',
+        'Final Defense'         => 'missing',
+        'Applied for Copyright' => 'missing',
+        'Research Presented'    => 'missing',
+        'Research Published'    => 'missing',
+        'Copyright Approved'    => 'missing',
+        'UREC Form'             => $pieUrecMap['UREC Form']['status']      ?? 'missing',
+        'UREC Clearance'        => $pieUrecMap['UREC Clearance']['status'] ?? 'missing',
     ];
+    if ($pieMilestones) {
+        foreach ([
+            'Proposal'              => 'proposal_status',
+            'Final Defense'         => 'final_defense_status',
+            'Applied for Copyright' => 'applied_copyright_status',
+            'Research Presented'    => 'research_presented_status',
+            'Research Published'    => 'research_published_status',
+            'Copyright Approved'    => 'copyright_approved_status',
+        ] as $label => $col) {
+            $val = $pieMilestones[$col] ?? '';
+            $milestoneStatuses[$label] = ($val === 'completed') ? 'approved' : ($val ?: 'missing');
+        }
+    }
+    foreach ($milestoneStatuses as $status) {
+        if ($status === 'approved')     $approved++;
+        elseif ($status === 'pending')  $pending++;
+        elseif ($status === 'rejected') $rejected++;
+        else                            $missing++;
+    }
 
     ob_end_clean();
-    echo json_encode($response);
+    echo json_encode([
+        'line' => ['labels' => $formattedDates, 'datasets' => $datasets],
+        'pie'  => ['labels' => ['Approved', 'Pending', 'Rejected', 'Missing'], 'data' => [$approved, $pending, $rejected, $missing]]
+    ]);
 
 } catch (Exception $e) {
     ob_end_clean();
     echo json_encode([
         'error' => $e->getMessage(),
-        'line' => [
-            'labels' => ['Error'],
-            'data' => [0]
-        ],
-        'pie' => [
-            'labels' => ['Error'],
-            'data' => [100]
-        ]
+        'line'  => ['labels' => ['Error'], 'data' => [0]],
+        'pie'   => ['labels' => ['Error'], 'data' => [100]]
     ]);
 }
-?>

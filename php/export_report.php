@@ -33,60 +33,74 @@ switch ($type) {
 
 fclose($output);
 
-// Log the export (optional - only if you created report_logs table)
 try {
-    $logStmt = $con->prepare("
-        INSERT INTO report_logs (generated_by, report_type) 
-        VALUES (:user_id, :report_type)
-    ");
-    $logStmt->execute([
-        'user_id' => $_SESSION['id'],
-        'report_type' => $type
-    ]);
+    $logStmt = $con->prepare("INSERT INTO report_logs (generated_by, report_type) VALUES (:user_id, :report_type)");
+    $logStmt->execute(['user_id' => $_SESSION['id'], 'report_type' => $type]);
 } catch (PDOException $e) {
-    // Ignore if report_logs table doesn't exist
 }
 
 function exportStatusReport($con, $output) {
-    fputcsv($output, ['Group Name', 'Leader', 'Approved', 'Pending', 'Rejected', 'Missing', 'Progress %']);
+    fputcsv($output, ['Group Name', 'Leader', 'Approved Titles', 'Proposal', 'UREC Processing', 'UREC Clearance', 'Final Defense', 'Applied Copyright', 'Research Presented', 'Research Published', 'Copyright Approved', 'Overall Progress %']);
     
     $query = $con->query("
-        SELECT 
-            g.name as group_name,
-            s.name as leader_name,
-            g.id as group_id
+        SELECT g.id as group_id, g.name as group_name, g.title_status,
+               s.name as leader_name
         FROM groups g
         LEFT JOIN student s ON g.id = s.group_id AND s.is_leader = TRUE
         ORDER BY g.name
     ");
     
     while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
-        $statusStmt = $con->prepare("
+        $milestonesStmt = $con->prepare("
             SELECT 
-                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
-                COUNT(DISTINCT task_name) as total_submitted
-            FROM uploads
-            WHERE school_id IN (
-                SELECT school_id FROM student WHERE group_id = :group_id
-            )
+                g.title_status,
+                gm.proposal_status,
+                gm.final_defense_status,
+                gm.applied_copyright_status,
+                gm.research_presented_status,
+                gm.research_published_status,
+                gm.copyright_approved_status
+            FROM groups g
+            LEFT JOIN group_milestones gm ON g.id = gm.group_id
+            WHERE g.id = :group_id
         ");
-        $statusStmt->execute(['group_id' => $row['group_id']]);
-        $status = $statusStmt->fetch(PDO::FETCH_ASSOC);
+        $milestonesStmt->execute(['group_id' => $row['group_id']]);
+        $milestones = $milestonesStmt->fetch(PDO::FETCH_ASSOC);
         
-        $missing = 6 - ($status['total_submitted'] ?? 0);
-        $progress = round((($status['approved'] ?? 0) / 6) * 100);
+        $urecStmt = $con->prepare("
+            SELECT document_type, status FROM urec_documents
+            WHERE group_id = :group_id
+        ");
+        $urecStmt->execute(['group_id' => $row['group_id']]);
+        $urecData = $urecStmt->fetchAll(PDO::FETCH_ASSOC);
         
-        fputcsv($output, [
-            $row['group_name'],
-            $row['leader_name'] ?? 'No Leader',
-            $status['approved'] ?? 0,
-            $status['pending'] ?? 0,
-            $status['rejected'] ?? 0,
-            $missing,
-            $progress . '%'
-        ]);
+        $urec = ['UREC Form' => 'No', 'UREC Clearance' => 'No'];
+        foreach ($urecData as $doc) {
+            if ($doc['status'] === 'approved') {
+                $urec[$doc['document_type']] = 'Yes';
+            }
+        }
+        
+        $statusValues = [
+            ($milestones['title_status'] ?? '') === 'approved' ? 'Yes' : 'No',
+            ($milestones['proposal_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            $urec['UREC Form'],
+            $urec['UREC Clearance'],
+            ($milestones['final_defense_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['applied_copyright_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['research_presented_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['research_published_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['copyright_approved_status'] ?? '') === 'completed' ? 'Yes' : 'No'
+        ];
+        
+        $completedCount = count(array_filter($statusValues, fn($v) => $v === 'Yes'));
+        $progress = round(($completedCount / 9) * 100);
+        
+        fputcsv($output, array_merge(
+            [$row['group_name'], $row['leader_name'] ?? 'No Leader'],
+            $statusValues,
+            [$progress . '%']
+        ));
     }
 }
 
@@ -96,23 +110,31 @@ function exportSDGReport($con, $output) {
     $totalGroups = $con->query("SELECT COUNT(*) FROM groups")->fetchColumn();
     
     $query = $con->query("
-        SELECT 
-            COALESCE(sd.name, 'Unassigned') as sdg_name,
-            COUNT(g.id) as group_count
-        FROM groups g
-        LEFT JOIN un_sdgs sd ON g.sdg_id = sd.id
-        GROUP BY sd.name
-        ORDER BY group_count DESC
+        SELECT us.name as sdg_name, COUNT(DISTINCT gs.group_id) as group_count
+        FROM un_sdgs us
+        LEFT JOIN group_sdgs gs ON us.id = gs.sdg_id
+        GROUP BY us.id, us.name
+        HAVING COUNT(DISTINCT gs.group_id) > 0
+        ORDER BY group_count DESC, us.name
     ");
     
-    while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    
+    $unassignedQuery = $con->query("
+        SELECT COUNT(DISTINCT g.id) as group_count
+        FROM groups g
+        LEFT JOIN group_sdgs gs ON g.id = gs.group_id
+        WHERE gs.id IS NULL
+    ");
+    $unassigned = $unassignedQuery->fetchColumn();
+    
+    if ($unassigned > 0) {
+        $rows[] = ['sdg_name' => 'Unassigned', 'group_count' => $unassigned];
+    }
+    
+    foreach ($rows as $row) {
         $percentage = $totalGroups > 0 ? round(($row['group_count'] / $totalGroups) * 100, 2) : 0;
-        
-        fputcsv($output, [
-            $row['sdg_name'],
-            $row['group_count'],
-            $percentage . '%'
-        ]);
+        fputcsv($output, [$row['sdg_name'], $row['group_count'], $percentage . '%']);
     }
 }
 
@@ -122,81 +144,124 @@ function exportThrustReport($con, $output) {
     $totalGroups = $con->query("SELECT COUNT(*) FROM groups")->fetchColumn();
     
     $query = $con->query("
-        SELECT 
-            COALESCE(rt.name, 'Unassigned') as thrust_name,
-            COUNT(g.id) as group_count
-        FROM groups g
-        LEFT JOIN research_thrusts rt ON g.thrust_id = rt.id
-        GROUP BY rt.name
-        ORDER BY group_count DESC
+        SELECT rt.name as thrust_name, COUNT(DISTINCT gt.group_id) as group_count
+        FROM research_thrusts rt
+        LEFT JOIN group_thrusts gt ON rt.id = gt.thrust_id
+        GROUP BY rt.id, rt.name
+        HAVING COUNT(DISTINCT gt.group_id) > 0
+        ORDER BY group_count DESC, rt.name
     ");
     
-    while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
+    $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+    
+    $unassignedQuery = $con->query("
+        SELECT COUNT(DISTINCT g.id) as group_count
+        FROM groups g
+        LEFT JOIN group_thrusts gt ON g.id = gt.group_id
+        WHERE gt.id IS NULL
+    ");
+    $unassigned = $unassignedQuery->fetchColumn();
+    
+    if ($unassigned > 0) {
+        $rows[] = ['thrust_name' => 'Unassigned', 'group_count' => $unassigned];
+    }
+    
+    foreach ($rows as $row) {
         $percentage = $totalGroups > 0 ? round(($row['group_count'] / $totalGroups) * 100, 2) : 0;
-        
-        fputcsv($output, [
-            $row['thrust_name'],
-            $row['group_count'],
-            $percentage . '%'
-        ]);
+        fputcsv($output, [$row['thrust_name'], $row['group_count'], $percentage . '%']);
     }
 }
 
 function exportFullReport($con, $output) {
     fputcsv($output, [
-        'Group Name', 'Leader', 'Research Title', 'Title Status',
-        'UN SDG', 'Research Thrust', 'Advisor',
-        'Approved', 'Pending', 'Rejected', 'Missing', 'Progress %'
+        'Group Name', 'Leader', 'Research Title',
+        'UN SDGs', 'Research Thrusts', 'Advisor',
+        'Approved Titles', 'Proposal', 'UREC Processing', 'UREC Clearance', 'Final Defense',
+        'Applied Copyright', 'Research Presented', 'Research Published', 'Copyright Approved',
+        'Progress %'
     ]);
     
     $query = $con->query("
-        SELECT 
-            g.id as group_id,
-            g.name as group_name,
-            g.research_title,
-            g.title_status,
-            s.name as leader_name,
-            sd.name as sdg_name,
-            rt.name as thrust_name,
-            a.name as advisor_name
+        SELECT g.id as group_id, g.name as group_name, g.research_title, g.title_status,
+               s.name as leader_name, a.name as advisor_name
         FROM groups g
         LEFT JOIN student s ON g.id = s.group_id AND s.is_leader = TRUE
-        LEFT JOIN un_sdgs sd ON g.sdg_id = sd.id
-        LEFT JOIN research_thrusts rt ON g.thrust_id = rt.id
         LEFT JOIN advisor a ON g.adviser_id = a.id
         ORDER BY g.name
     ");
     
     while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
-        $statusStmt = $con->prepare("
-            SELECT 
-                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
-                COUNT(DISTINCT task_name) as total_submitted
-            FROM uploads
-            WHERE school_id IN (
-                SELECT school_id FROM student WHERE group_id = :group_id
-            )
+        $sdgsStmt = $con->prepare("
+            SELECT STRING_AGG(us.name, ', ' ORDER BY us.name) as sdgs
+            FROM un_sdgs us
+            JOIN group_sdgs gs ON us.id = gs.sdg_id
+            WHERE gs.group_id = :group_id
         ");
-        $statusStmt->execute(['group_id' => $row['group_id']]);
-        $status = $statusStmt->fetch(PDO::FETCH_ASSOC);
+        $sdgsStmt->execute(['group_id' => $row['group_id']]);
+        $sdgs = $sdgsStmt->fetchColumn() ?: 'Unassigned';
         
-        $missing = 6 - ($status['total_submitted'] ?? 0);
-        $progress = round((($status['approved'] ?? 0) / 6) * 100);
+        $thrustsStmt = $con->prepare("
+            SELECT STRING_AGG(rt.name, ', ' ORDER BY rt.name) as thrusts
+            FROM research_thrusts rt
+            JOIN group_thrusts gt ON rt.id = gt.thrust_id
+            WHERE gt.group_id = :group_id
+        ");
+        $thrustsStmt->execute(['group_id' => $row['group_id']]);
+        $thrusts = $thrustsStmt->fetchColumn() ?: 'Unassigned';
+        
+        $milestonesStmt = $con->prepare("
+            SELECT proposal_status, final_defense_status, applied_copyright_status,
+                   research_presented_status, research_published_status, copyright_approved_status
+            FROM group_milestones WHERE group_id = :group_id
+        ");
+        $milestonesStmt->execute(['group_id' => $row['group_id']]);
+        $milestones = $milestonesStmt->fetch(PDO::FETCH_ASSOC);
+        
+        $urecStmt = $con->prepare("
+            SELECT document_type, status FROM urec_documents
+            WHERE group_id = :group_id
+        ");
+        $urecStmt->execute(['group_id' => $row['group_id']]);
+        $urecData = $urecStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $urec = ['UREC Form' => 'No', 'UREC Clearance' => 'No'];
+        foreach ($urecData as $doc) {
+            if ($doc['status'] === 'approved') {
+                $urec[$doc['document_type']] = 'Yes';
+            }
+        }
+        
+        $statusValues = [
+            ($row['title_status'] ?? '') === 'approved' ? 'Yes' : 'No',
+            ($milestones['proposal_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            $urec['UREC Form'],
+            $urec['UREC Clearance'],
+            ($milestones['final_defense_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['applied_copyright_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['research_presented_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['research_published_status'] ?? '') === 'completed' ? 'Yes' : 'No',
+            ($milestones['copyright_approved_status'] ?? '') === 'completed' ? 'Yes' : 'No'
+        ];
+        
+        $completedCount = count(array_filter($statusValues, fn($v) => $v === 'Yes'));
+        $progress = round(($completedCount / 9) * 100);
         
         fputcsv($output, [
             $row['group_name'],
             $row['leader_name'] ?? 'No Leader',
             $row['research_title'] ?? 'No Title',
-            ucfirst($row['title_status'] ?? 'missing'),
-            $row['sdg_name'] ?? 'Unassigned',
-            $row['thrust_name'] ?? 'Unassigned',
+            $sdgs,
+            $thrusts,
             $row['advisor_name'] ?? 'Unassigned',
-            $status['approved'] ?? 0,
-            $status['pending'] ?? 0,
-            $status['rejected'] ?? 0,
-            $missing,
+            $statusValues[0],
+            $statusValues[1],
+            $statusValues[2],
+            $statusValues[3],
+            $statusValues[4],
+            $statusValues[5],
+            $statusValues[6],
+            $statusValues[7],
+            $statusValues[8],
             $progress . '%'
         ]);
     }

@@ -1,252 +1,212 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
-
-include(__DIR__ . "/../connect.php");
+include('../connect.php');
 session_start();
 
 if (!isset($_SESSION['submit'])) {
-    echo json_encode(['error' => 'Not authenticated']);
+    echo json_encode(['error' => 'Unauthorized']);
     exit;
 }
 
-// Get ALL groups in the system (coordinator sees everything)
-$groupsStmt = $con->query("
-    SELECT id as group_id, name as group_name
-    FROM groups
-    ORDER BY name
-");
-$groups = $groupsStmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $program = $_GET['program'] ?? 'all';
+    $advisor_id = $_GET['advisor'] ?? 'all';
 
-if (empty($groups)) {
-    echo json_encode([
-        'line' => [
-            'labels' => ['No Data'],
-            'datasets' => []
-        ],
-        'pie' => [
-            'labels' => ['Approved', 'Pending', 'Rejected', 'Missing'],
-            'data' => [0, 0, 0, 100]
-        ],
-        'progress' => 0
-    ]);
-    exit;
-}
+    $activeYearQuery = $con->query("SELECT id, year_start, year_end FROM academic_years WHERE is_active = TRUE LIMIT 1");
+    $activeYear = $activeYearQuery->fetch(PDO::FETCH_ASSOC);
 
-// Calculate total possible items (each group has 12 items: 6 chapters + 6 milestones)
-$totalPossible = count($groups) * 12;
-
-// LINE CHART: Cumulative progress percentages over time
-// Get all uploads sorted by date and time
-$timelineStmt = $con->query("
-    SELECT 
-        DATE(uploaded_at) as upload_date,
-        uploaded_at,
-        school_id,
-        task_name,
-        status
-    FROM uploads
-    ORDER BY uploaded_at ASC
-");
-$allUploads = $timelineStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Group uploads by date first
-$dateGroups = [];
-foreach ($allUploads as $upload) {
-    $date = $upload['upload_date'];
-    if (!isset($dateGroups[$date])) {
-        $dateGroups[$date] = [];
+    if (!$activeYear) {
+        echo json_encode([
+            'line' => ['labels' => [], 'datasets' => []],
+            'pie' => ['labels' => [], 'data' => []],
+            'progress' => 0
+        ]);
+        exit;
     }
-    $dateGroups[$date][] = $upload;
-}
 
-// Process each date completely, then save data point
-$dates = [];
-$approvedData = [];
-$rejectedData = [];
-$cumulativeApproved = [];
-$cumulativeRejected = [];
+    $yearStart = $activeYear['year_start'];
+    $yearEnd = $activeYear['year_end'];
 
-foreach ($dateGroups as $date => $uploads) {
-    // Process ALL uploads for this date
-    foreach ($uploads as $upload) {
-        $taskKey = $upload['school_id'] . '-' . $upload['task_name'];
-        
-        if ($upload['status'] === 'approved') {
-            $cumulativeApproved[$taskKey] = true;
-            unset($cumulativeRejected[$taskKey]);
-        } elseif ($upload['status'] === 'rejected') {
-            $cumulativeRejected[$taskKey] = true;
-            unset($cumulativeApproved[$taskKey]);
-        }
-        // Pending doesn't affect approved/rejected counts
+    $whereClause = "1=1";
+    $params = [];
+    
+    if ($program !== 'all') {
+        $whereClause .= " AND EXISTS (SELECT 1 FROM student s WHERE s.group_id = g.id AND s.program = :program)";
+        $params['program'] = $program;
     }
     
-    // AFTER processing all uploads for this date, save the data point
-    $dates[] = date("M d", strtotime($date));
-    $approvedData[] = round((count($cumulativeApproved) / $totalPossible) * 100, 2);
-    $rejectedData[] = round((count($cumulativeRejected) / $totalPossible) * 100, 2);
-}
+    if ($advisor_id !== 'all') {
+        $whereClause .= " AND g.adviser_id = :advisor_id";
+        $params['advisor_id'] = $advisor_id;
+    }
 
-// If no data, show empty state
-if (empty($dates)) {
-    $dates = ['No Data'];
-    $datasets = [];
-} else {
-    $datasets = [
-        [
-            'label' => 'Approved',
-            'data' => $approvedData,
-            'borderColor' => 'rgb(76, 175, 80)',
-            'backgroundColor' => 'rgba(76, 175, 80, 0.2)',
-            'fill' => false,
-            'tension' => 0.3
-        ],
-        [
-            'label' => 'Rejected',
-            'data' => $rejectedData,
-            'borderColor' => 'rgb(244, 67, 54)',
-            'backgroundColor' => 'rgba(244, 67, 54, 0.2)',
-            'fill' => false,
-            'tension' => 0.3
-        ]
+    $totalGroupsQuery = "SELECT COUNT(*) FROM groups g WHERE $whereClause";
+    $stmt = $con->prepare($totalGroupsQuery);
+    $stmt->execute($params);
+    $totalGroups = $stmt->fetchColumn();
+
+    $milestoneLabels = [
+        'Approved Titles',
+        'Proposal',
+        'UREC Processing',
+        'UREC Clearance',
+        'Final Defense',
+        'Applied for Copyright',
+        'Research Presented',
+        'Research Published',
+        'Copyright Approved'
     ];
-}
 
-// PIE CHART & PROGRESS: Overall status distribution across ALL groups (INCLUDING MILESTONES)
-$totalApproved = 0;
-$totalPending = 0;
-$totalRejected = 0;
-$totalMissing = 0;
+    $colors = [
+        'rgb(76, 175, 80)', 'rgb(33, 150, 243)', 'rgb(156, 39, 176)',
+        'rgb(233, 30, 99)', 'rgb(255, 152, 0)', 'rgb(255, 87, 34)',
+        'rgb(121, 85, 72)', 'rgb(96, 125, 139)', 'rgb(0, 150, 136)'
+    ];
 
-foreach ($groups as $group) {
-    $group_id = $group['group_id'];
-    
-    // COUNT CHAPTERS (6 total)
-    $statusStmt = $con->prepare("
-        SELECT task_name, status
-        FROM uploads
-        WHERE school_id IN (
-            SELECT school_id FROM student WHERE group_id = :group_id
+    $monthsQuery = "
+        SELECT TO_CHAR(generate_series, 'Mon YYYY') as month_label,
+               DATE_TRUNC('month', generate_series) as month_date
+        FROM generate_series(
+            DATE_TRUNC('month', :year_start::date),
+            DATE_TRUNC('month', CURRENT_DATE),
+            '1 month'::interval
         )
-        ORDER BY uploaded_at DESC
-    ");
-    $statusStmt->execute(['group_id' => $group_id]);
-    $allUploads = $statusStmt->fetchAll(PDO::FETCH_ASSOC);
+        ORDER BY generate_series
+    ";
     
-    // Get latest upload per task
-    $uploadMap = [];
-    foreach ($allUploads as $upload) {
-        if (!isset($uploadMap[$upload['task_name']])) {
-            $uploadMap[$upload['task_name']] = $upload;
+    $monthsStmt = $con->prepare($monthsQuery);
+    $monthsStmt->execute(['year_start' => $yearStart]);
+    $monthsData = $monthsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $lineData = [
+        'labels' => [],
+        'datasets' => []
+    ];
+
+    foreach ($milestoneLabels as $i => $label) {
+        $lineData['datasets'][] = [
+            'label' => $label,
+            'data' => [],
+            'borderColor' => $colors[$i],
+            'backgroundColor' => str_replace('rgb', 'rgba', str_replace(')', ', 0.2)', $colors[$i])),
+            'tension' => 0.3
+        ];
+    }
+
+    foreach ($monthsData as $monthInfo) {
+        $lineData['labels'][] = $monthInfo['month_label'];
+        $monthEnd = $monthInfo['month_date'];
+
+        $cumulativeQuery = "
+            SELECT 
+                COUNT(CASE WHEN g.title_status = 'approved' AND g.title_approved_at <= :month_end THEN 1 END) as title_approved,
+                COUNT(CASE WHEN gm.proposal_status = 'completed' AND g.proposal_uploaded_at <= :month_end THEN 1 END) as proposal,
+                COUNT(CASE WHEN ud_form.status = 'approved' AND ud_form.uploaded_at <= :month_end THEN 1 END) as urec_form,
+                COUNT(CASE WHEN ud_clear.status = 'approved' AND ud_clear.uploaded_at <= :month_end THEN 1 END) as urec_clearance,
+                COUNT(CASE WHEN gm.final_defense_status = 'completed' AND g.final_defense_uploaded_at <= :month_end THEN 1 END) as final_defense,
+                COUNT(CASE WHEN gm.applied_copyright_status = 'completed' AND g.applied_copyright_uploaded_at <= :month_end THEN 1 END) as applied_copyright,
+                COUNT(CASE WHEN gm.research_presented_status = 'completed' AND g.research_presented_uploaded_at <= :month_end THEN 1 END) as research_presented,
+                COUNT(CASE WHEN gm.research_published_status = 'completed' AND g.research_published_uploaded_at <= :month_end THEN 1 END) as research_published,
+                COUNT(CASE WHEN gm.copyright_approved_status = 'completed' AND g.copyright_approved_uploaded_at <= :month_end THEN 1 END) as copyright_approved
+            FROM groups g
+            LEFT JOIN group_milestones gm ON g.id = gm.group_id
+            LEFT JOIN (
+                SELECT DISTINCT ON (group_id) group_id, status, uploaded_at
+                FROM urec_documents 
+                WHERE document_type = 'UREC Form'
+                ORDER BY group_id, uploaded_at DESC
+            ) ud_form ON g.id = ud_form.group_id
+            LEFT JOIN (
+                SELECT DISTINCT ON (group_id) group_id, status, uploaded_at
+                FROM urec_documents 
+                WHERE document_type = 'UREC Clearance'
+                ORDER BY group_id, uploaded_at DESC
+            ) ud_clear ON g.id = ud_clear.group_id
+            WHERE $whereClause
+        ";
+
+        $cumulativeParams = array_merge($params, ['month_end' => date('Y-m-d H:i:s', strtotime($monthEnd . ' + 1 month - 1 second'))]);
+        $cumulativeStmt = $con->prepare($cumulativeQuery);
+        $cumulativeStmt->execute($cumulativeParams);
+        $cumulative = $cumulativeStmt->fetch(PDO::FETCH_ASSOC);
+
+        $cumulativeData = [
+            (int)$cumulative['title_approved'],
+            (int)$cumulative['proposal'],
+            (int)$cumulative['urec_form'],
+            (int)$cumulative['urec_clearance'],
+            (int)$cumulative['final_defense'],
+            (int)$cumulative['applied_copyright'],
+            (int)$cumulative['research_presented'],
+            (int)$cumulative['research_published'],
+            (int)$cumulative['copyright_approved']
+        ];
+
+        for ($i = 0; $i < 9; $i++) {
+            $percentage = $totalGroups > 0 ? round(($cumulativeData[$i] / $totalGroups) * 100, 2) : 0;
+            $lineData['datasets'][$i]['data'][] = $percentage;
         }
     }
-    
-    // Count chapter statuses
-    foreach ($uploadMap as $upload) {
-        if ($upload['status'] === 'approved') {
-            $totalApproved++;
-        } elseif ($upload['status'] === 'pending') {
-            $totalPending++;
-        } elseif ($upload['status'] === 'rejected') {
-            $totalRejected++;
-        }
-    }
-    
-    // Missing chapters
-    $totalMissing += (6 - count($uploadMap));
-    
-    // COUNT MILESTONES (6 total)
-    $milestoneStmt = $con->prepare("
+
+    $pieCountsQuery = "
         SELECT 
-            g.title_status,
-            gm.proposal_status,
-            gm.final_defense_status,
-            gm.copyright_status
+            COUNT(CASE WHEN g.title_status = 'approved' THEN 1 END) as title_approved,
+            COUNT(CASE WHEN gm.proposal_status = 'completed' THEN 1 END) as proposal,
+            COUNT(CASE WHEN ud_form.status = 'approved' THEN 1 END) as urec_form,
+            COUNT(CASE WHEN ud_clear.status = 'approved' THEN 1 END) as urec_clearance,
+            COUNT(CASE WHEN gm.final_defense_status = 'completed' THEN 1 END) as final_defense,
+            COUNT(CASE WHEN gm.applied_copyright_status = 'completed' THEN 1 END) as applied_copyright,
+            COUNT(CASE WHEN gm.research_presented_status = 'completed' THEN 1 END) as research_presented,
+            COUNT(CASE WHEN gm.research_published_status = 'completed' THEN 1 END) as research_published,
+            COUNT(CASE WHEN gm.copyright_approved_status = 'completed' THEN 1 END) as copyright_approved
         FROM groups g
         LEFT JOIN group_milestones gm ON g.id = gm.group_id
-        WHERE g.id = :group_id
-    ");
-    $milestoneStmt->execute(['group_id' => $group_id]);
-    $milestones = $milestoneStmt->fetch(PDO::FETCH_ASSOC);
-    
-    // Get UREC documents
-    $urecStmt = $con->prepare("
-        SELECT document_type, status
-        FROM urec_documents
-        WHERE group_id = :group_id
-        ORDER BY uploaded_at DESC
-    ");
-    $urecStmt->execute(['group_id' => $group_id]);
-    $urecDocs = $urecStmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    $urecMap = [];
-    foreach ($urecDocs as $doc) {
-        if (!isset($urecMap[$doc['document_type']])) {
-            $urecMap[$doc['document_type']] = $doc;
-        }
-    }
-    
-    // Count milestone statuses (6 milestones)
-    $milestoneStatuses = [];
-    
-    // 1. Title
-    $milestoneStatuses['Title'] = $milestones['title_status'] ?? 'missing';
-    
-    // 2. Proposal
-    $milestoneStatuses['Proposal'] = 'missing';
-    if ($milestones && !empty($milestones['proposal_status'])) {
-        $milestoneStatuses['Proposal'] = ($milestones['proposal_status'] === 'completed') ? 'approved' : $milestones['proposal_status'];
-    }
-    
-    // 3. UREC Form
-    $milestoneStatuses['UREC Form'] = isset($urecMap['UREC Form']) ? $urecMap['UREC Form']['status'] : 'missing';
-    
-    // 4. UREC Clearance
-    $milestoneStatuses['UREC Clearance'] = isset($urecMap['UREC Clearance']) ? $urecMap['UREC Clearance']['status'] : 'missing';
-    
-    // 5. Final Defense
-    $milestoneStatuses['Final Defense'] = 'missing';
-    if ($milestones && !empty($milestones['final_defense_status'])) {
-        $milestoneStatuses['Final Defense'] = ($milestones['final_defense_status'] === 'completed') ? 'approved' : $milestones['final_defense_status'];
-    }
-    
-    // 6. Copyright
-    $milestoneStatuses['Copyright/IP'] = 'missing';
-    if ($milestones && !empty($milestones['copyright_status'])) {
-        $milestoneStatuses['Copyright/IP'] = ($milestones['copyright_status'] === 'completed') ? 'approved' : $milestones['copyright_status'];
-    }
-    
-    // Count milestone statuses
-    foreach ($milestoneStatuses as $status) {
-        if ($status === 'approved') {
-            $totalApproved++;
-        } elseif ($status === 'pending') {
-            $totalPending++;
-        } elseif ($status === 'rejected') {
-            $totalRejected++;
-        } else {
-            $totalMissing++;
-        }
-    }
+        LEFT JOIN (
+            SELECT DISTINCT ON (group_id) group_id, status 
+            FROM urec_documents 
+            WHERE document_type = 'UREC Form'
+            ORDER BY group_id, uploaded_at DESC
+        ) ud_form ON g.id = ud_form.group_id
+        LEFT JOIN (
+            SELECT DISTINCT ON (group_id) group_id, status 
+            FROM urec_documents 
+            WHERE document_type = 'UREC Clearance'
+            ORDER BY group_id, uploaded_at DESC
+        ) ud_clear ON g.id = ud_clear.group_id
+        WHERE $whereClause
+    ";
+
+    $pieStmt = $con->prepare($pieCountsQuery);
+    $pieStmt->execute($params);
+    $pieCounts = $pieStmt->fetch(PDO::FETCH_ASSOC);
+
+    $pieData = [
+        (int)$pieCounts['title_approved'],
+        (int)$pieCounts['proposal'],
+        (int)$pieCounts['urec_form'],
+        (int)$pieCounts['urec_clearance'],
+        (int)$pieCounts['final_defense'],
+        (int)$pieCounts['applied_copyright'],
+        (int)$pieCounts['research_presented'],
+        (int)$pieCounts['research_published'],
+        (int)$pieCounts['copyright_approved']
+    ];
+
+    $totalCompleted = array_sum($pieData);
+    $totalPossible = $totalGroups * 9;
+    $overallProgress = $totalPossible > 0 ? round(($totalCompleted / $totalPossible) * 100, 2) : 0;
+
+    echo json_encode([
+        'line' => $lineData,
+        'pie' => [
+            'labels' => $milestoneLabels,
+            'data' => $pieData
+        ],
+        'progress' => $overallProgress
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
 }
-
-// Calculate overall progress percentage
-$overallProgress = $totalPossible > 0 ? round(($totalApproved / $totalPossible) * 100) : 0;
-
-$response = [
-    'line' => [
-        'labels' => $dates,
-        'datasets' => $datasets
-    ],
-    'pie' => [
-        'labels' => ['Approved', 'Pending', 'Rejected', 'Missing'],
-        'data' => [$totalApproved, $totalPending, $totalRejected, $totalMissing]
-    ],
-    'progress' => $overallProgress
-];
-
-echo json_encode($response);
 ?>

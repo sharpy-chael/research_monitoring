@@ -1,8 +1,9 @@
 <?php
-include("connect.php");
 session_start();
+include("connect.php");
+include('php/get_setting.php');
+include("check_session.php");
 
-// Check if user is authorized (admin only)
 if (!isset($_SESSION['submit'])) {
     header('Location: home.php');
     exit;
@@ -271,6 +272,10 @@ if ($user_role === 'admin') {
 <!-- Modals will be included here -->
 <div id="modalContainer"></div>
 
+<script>
+    const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
+</script>
+<script src="js/session_monitor.js"></script>
 <script src="js/system.js"></script>
 </body>
 </html>

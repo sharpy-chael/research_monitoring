@@ -7,14 +7,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     $advisorId = trim($_POST['advisor_id']);
     $password = $_POST['passw'];
 
-    // Validate advisor_id is not empty
     if (empty($advisorId)) {
         $_SESSION['error_message'] = "Advisor ID is required";
         header("Location: signing.php");
         exit();
     }
 
-    // Check if advisor_id already exists
     $checkStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE advisor_id = :advisor_id");
     $checkStmt->execute(['advisor_id' => $advisorId]);
     if ($checkStmt->fetch()) {

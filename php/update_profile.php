@@ -4,17 +4,32 @@ include("../connect.php");
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    $name = $_POST['name'];
-    $program = $_POST['program'];
-    $title = $_POST['title']; // ✅ ADD THIS
-    $school_id = $_SESSION['school_id'];
+    $lastname   = $_POST['lastname'];
+    $firstname  = $_POST['firstname'];
+    $middlename = $_POST['middlename'] ?? '';
+    $program    = $_POST['program'];
+    $title      = $_POST['title'] ?? $_SESSION['research_title'];
+    $email      = $_POST['email'];
+    $address    = $_POST['address'];
+    $gender     = $_POST['gender'];
+    $school_id  = $_SESSION['school_id'];
+
+    $fn = trim($firstname);
+    $mn = trim($middlename);
+    $ln = trim($lastname);
+    $displayName = trim($fn . ($mn ? ' ' . $mn : '') . ($ln ? ' ' . $ln : ''));
 
     $updateImage = "";
     $params = [
-        ':name' => $name,
-        ':program' => $program,
-        ':research_title' => $title, // ✅ ADD THIS
-        ':school_id' => $school_id
+        ':lastname'       => $lastname,
+        ':firstname'      => $firstname,
+        ':middlename'     => $middlename,
+        ':program'        => $program,
+        ':research_title' => $title,
+        ':email'          => $email,
+        ':address'        => $address,
+        ':gender'         => $gender,
+        ':school_id'      => $school_id
     ];
 
     if (!empty($_FILES['profile_image']['name'])) {
@@ -32,13 +47,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // ✅ UPDATE research_title
     $sql = "
         UPDATE student 
         SET 
-            name = :name,
+            lastname = :lastname,
+            firstname = :firstname,
+            middlename = :middlename,
             program = :program,
-            research_title = :research_title
+            research_title = :research_title,
+            email = :email,
+            address = :address,
+            gender = :gender
             $updateImage
         WHERE school_id = :school_id
     ";
@@ -46,11 +65,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt = $con->prepare($sql);
 
     if ($stmt->execute($params)) {
-
-        // ✅ Update session
-        $_SESSION['name'] = $name;
-        $_SESSION['program'] = $program;
+        $_SESSION['lastname']       = $lastname;
+        $_SESSION['firstname']      = $firstname;
+        $_SESSION['middlename']     = $middlename;
+        $_SESSION['name']           = $displayName;
+        $_SESSION['program']        = $program;
         $_SESSION['research_title'] = $title;
+        $_SESSION['email']          = $email;
+        $_SESSION['address']        = $address;
+        $_SESSION['gender']         = $gender;
 
         if (!empty($updateImage)) {
             $_SESSION['images'] = $fileName;

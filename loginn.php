@@ -6,21 +6,19 @@ include "connect.php";
 if (!empty($_POST['submit'])) {
     $_SESSION['submit'] = $_POST['submit'];
     $name = trim($_POST['name']);
-    $advisorId = trim($_POST['advisor_id']);
     $password = $_POST['password'];
 
-    $stmt = $con->prepare("SELECT * FROM advisor WHERE name = :name AND advisor_id = :advisor_id");
-    $stmt->execute(['name' => $name, 'advisor_id' => $advisorId]);
+    $stmt = $con->prepare("SELECT * FROM advisor WHERE name = :name");
+    $stmt->execute(['name' => $name]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row && password_verify($password, $row['pass_word'])) {
-        // Check if account is active
         if (!$row['is_active']) {
             $_SESSION['error_message'] = "Your account has been deactivated. Contact administrator.";
             header("Location: loginn.php");
             exit;
         }
-        
+
         $_SESSION['name'] = $row['name'];
         $_SESSION['id'] = $row['id'];
         $_SESSION['advisor_id'] = $row['advisor_id'];
@@ -38,7 +36,7 @@ if (!empty($_POST['submit'])) {
         header("Location: advisor.php");
         exit;
     } else {
-        $_SESSION['error_message'] = "Incorrect Name, Advisor ID, or Password";
+        $_SESSION['error_message'] = "Incorrect Username or Password";
         header("Location: loginn.php");
         exit;
     }
@@ -62,36 +60,33 @@ if (!empty($_POST['submit'])) {
         <div class="error-message"><?php echo $_SESSION['error_message']; ?></div>
         <?php unset($_SESSION['error_message']); ?>
     <?php endif; ?>
+
     <div class="wrap">
-         <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
-            <form action="" method="post">
-                <h1>Advisor</h1>
-                <div class="inputed">
-                    <label for="name">Username</label>
-                    <input type="text" name="name" placeholder="Enter your Username" required>
-                    <i class='bxr bx-user'></i>
-                </div>
-                <div class="inputed">
-                    <label for="advisor_id">Advisor ID</label>
-                    <input type="text" name="advisor_id" placeholder="Enter your ID" required>
-                    <i class='bxr  bx-user-id-card'></i> 
-                </div>
-                <div class="inputed">
-                    <label for="password">Password</label>
-                    <input type="password" name="password" placeholder="Enter your Password" required>
-                    <i class='bxr bx-lock'></i>
-                </div>
-                <div class="btn">
-                    <input type="submit" name="submit" value="Log In">
-                </div>
-                <div class="a">
-                    <p>Don't have an account yet? <a href="signing.php">Sign up</a></p>
-                </div>     
-            </form>
-        </div>
+        <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
+        <form action="" method="post">
+            <h1>Advisor</h1>
+            <div class="inputed">
+                <label for="name">Username</label>
+                <input type="text" name="name" placeholder="Enter your Username" required>
+                <i class='bxr bx-user'></i>
+            </div>
+            <div class="inputed">
+                <label for="password">Password</label>
+                <input type="password" name="password" placeholder="Enter your Password" required>
+                <i class='bxr bx-lock'></i>
+            </div>
+            <div class="btn">
+                <input type="submit" name="submit" value="Log In">
+            </div>
+            <div class="a">
+                <p>Don't have an account yet? <a href="signing.php">Sign up</a></p>
+            </div>
+        </form>
+    </div>
+
     <footer class="footer">
         <p>© 2025 Research Monitoring System</p>
-    </footer> 
-    <script src="js/timeout.js"></script> 
+    </footer>
+    <script src="js/timeout.js"></script>
 </body>
 </html>

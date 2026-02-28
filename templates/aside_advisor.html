@@ -1,17 +1,99 @@
-<!-- Desktop Sidebar (hidden on mobile) -->
 <aside class="sidebar">
+    <div class="profile">
+        <i class="fa-solid fa-user-tie"></i>
+        <h3>Advisor</h3>
+    </div>
+    <nav>
+        <a href="advisor.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+        <a href="advisees.php"><i class="ri-group-line"></i><span>Advisees</span></a>
+        <a href="advisor_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
+        <a href="javascript:void(0)" id="openNotifDesktop" class="notif-link">
+            <i class="ri-notification-3-line"></i>
+            <span>Notifications</span>
+            <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
+                <span class="notif-badge" id="notifCount"><?= $unreadCount ?></span>
+            <?php endif; ?>
+        </a>
+        <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>
+    </nav>
+    <div class="footer">
+        <p>2025 Research Monitoring</p>
+    </div>
+</aside>
+
+<div class="bottom-nav">
+    <nav>
+        <a href="advisor.php" data-page="advisor"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+        <a href="advisees.php" data-page="advisees"><i class="ri-group-line"></i><span>Advisees</span></a>
+        <a href="advisor_profile.php" data-page="advisor_profile"><i class="ri-user-line"></i><span>Profile</span></a>
+        <a href="javascript:void(0)" id="openNotifMobile">
+            <i class="ri-notification-3-line"></i>
+            <span>Notifs</span>
+            <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
+                <span class="notif-badge-mobile"><?= $unreadCount ?></span>
+            <?php endif; ?>
+        </a>
+        <a href="home.php" data-page="home"><i class="ri-logout-box-line"></i><span>Logout</span></a>
+    </nav>
+</div>
+
+<div class="notif-modal" id="notifModal">
+    <div class="notif-box">
+        <div class="notif-header">
+            <h4>Notifications</h4>
+            <span class="notif-close" id="closeNotif">&times;</span>
+        </div>
+        <div class="notif-body">
+            <?php if (!empty($notifications)): ?>
+                <?php foreach ($notifications as $notif): 
+                    $priorityClass = 'priority-' . strtolower($notif['priority']);
+                    $statusClass = $notif['status'] === 'sent' ? 'unread' : 'read';
+                ?>
+                    <div class="notification-item <?= $priorityClass ?> <?= $statusClass ?>" data-notif-id="<?= $notif['id'] ?>">
+                        <div class="notif-item-header">
+                            <strong>
+                                <?php if ($notif['status'] === 'sent'): ?>
+                                    <span class="new-badge">NEW</span>
+                                <?php endif; ?>
+                                <?= htmlspecialchars($notif['title']) ?>
+                            </strong>
+                            <small><?= date('M d, Y • h:i A', strtotime($notif['created_at'])) ?></small>
+                        </div>
+                        <div class="notif-message"><?= nl2br(htmlspecialchars($notif['message'])) ?></div>
+                        <div class="notif-actions">
+                            <?php if ($notif['status'] === 'sent'): ?>
+                                <button class="mark-read-btn" onclick="markAsReadAdvisor(<?= $notif['id'] ?>)">
+                                    <i class="ri-check-line"></i> Mark as Read
+                                </button>
+                            <?php endif; ?>
+                            <button class="delete-notif-btn" onclick="deleteNotificationAdvisor(<?= $notif['id'] ?>)">
+                                <i class="ri-delete-bin-line"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="no-notifs">
+                    <i class="ri-notification-off-line"></i>
+                    <p>No notifications</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
 
 <style>
-/* ===== NOTIFICATION MODAL ===== */
 .notif-link {
     position: relative;
 }
 
-/* Badge */
 .notif-badge {
     position: absolute;
-    top: 0;
-    right: 6px;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
     background: crimson;
     color: #fff;
     font-size: 11px;
@@ -19,6 +101,23 @@
     border-radius: 12px;
     font-weight: 600;
 }
+
+.notif-badge-mobile {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    background: crimson;
+    color: #fff;
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.bottom-nav a {
+    position: relative;
+}
+
 .notif-modal {
     display: none;
     position: fixed;
@@ -32,23 +131,26 @@
 .notif-modal.active {
     display: flex;
 }
+
 .notif-box {
     background: #fff;
-    width: 600px;              
+    width: 600px;
     max-width: 95vw;
-    max-height: 80vh;         
+    max-height: 80vh;
     border-radius: 14px;
     padding: 22px 24px;
-    overflow-y: auto;
     box-shadow: 0 18px 45px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
 }
 
-/* Header */
 .notif-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e0e0e0;
 }
 
 .notif-header h4 {
@@ -69,108 +171,232 @@
     opacity: 1;
 }
 
-/* Notification item */
+.notif-body {
+    overflow-y: auto;
+    max-height: calc(80vh - 100px);
+}
+
 .notification-item {
     background: #f7f7f7;
     padding: 14px 16px;
     border-radius: 10px;
     margin-bottom: 12px;
     font-size: 14px;
+    transition: all 0.3s;
 }
 
-.notification-item strong {
-    display: block;
-    font-size: 15px;
-    margin-bottom: 4px;
-}
-
-.notification-item small {
-    display: block;
-    margin-top: 6px;
-    color: #777;
-    font-size: 12px;
-}
-
-/* Unread */
 .notification-item.unread {
     border-left: 5px solid #007bff;
     background: #eef5ff;
 }
 
-/* 📱 Mobile */
+.notification-item.read {
+    opacity: 0.7;
+}
+
+.notification-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.notif-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.notif-item-header strong {
+    display: block;
+    font-size: 15px;
+    flex: 1;
+}
+
+.new-badge {
+    background: #dc3545;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.notif-item-header small {
+    font-size: 12px;
+    color: #999;
+    white-space: nowrap;
+}
+
+.notif-message {
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.notif-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.mark-read-btn {
+    background: #155724;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.3s;
+}
+
+.mark-read-btn:hover {
+    background: #0d3e1a;
+}
+
+.delete-notif-btn {
+    background: #721c24;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.3s;
+}
+
+.delete-notif-btn:hover {
+    background: #5a1a1f;
+}
+
+.priority-high {
+    border-left-color: #dc3545 !important;
+}
+
+.priority-normal {
+    border-left-color: #007bff !important;
+}
+
+.priority-low {
+    border-left-color: #6c757d !important;
+}
+
+.no-notifs {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.no-notifs i {
+    font-size: 64px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.no-notifs p {
+    font-size: 16px;
+}
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease-out;
+    min-width: 280px;
+}
+
+.toast.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.toast.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.toast i {
+    font-size: 18px;
+}
+
+.toast.removing {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
 @media (max-width: 600px) {
     .notif-box {
         width: 95vw;
         max-height: 85vh;
         padding: 18px;
     }
+
+    .notif-item-header {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .toast {
+        min-width: auto;
+    }
 }
 </style>
 
-
-<div class="profile">
-    <i class="fa-solid fa-user-tie"></i>
-    <h3>Advisor</h3>
-</div>
-
-<nav>
-    <a href="advisor.php"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
-    <a href="advisees.php"><i class="ri-group-line"></i><span>Advisees</span></a>
-    <a href="advisor_profile.php"><i class="ri-user-line"></i><span>Profile</span></a>
-    <a href="javascript:void(0)" id="openNotifDesktop" class="notif-link">
-        <i class="ri-notification-3-line"></i>
-        <span>Notifications</span>
-
-        <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
-            <span class="notif-badge" id="notifCount">
-                <?= $unreadCount ?>
-            </span>
-        <?php endif; ?>
-    </a>
-    <a href="home.php"><i class="ri-logout-box-line"></i><span>Log Out</span></a>
-</nav>
-
-<div class="footer">
-    <p>2025 Research Monitoring</p>
-</div>
-</aside>
-<div class="notif-modal" id="notifModal">
-    <div class="notif-box">
-        <div class="notif-header">
-            <h4>Notifications</h4>
-            <span class="notif-close" id="closeNotif">&times;</span>
-        </div>
-        <?php if (!empty($notifications)): ?>
-            <?php foreach ($notifications as $notif): ?>
-                <div class="notification-item <?= $notif['status'] === 'sent' ? 'unread' : '' ?>">
-                    <strong><?= htmlspecialchars($notif['title']) ?></strong>
-                    <div><?= htmlspecialchars($notif['message']) ?></div>
-                    <small><?= htmlspecialchars($notif['created_at']) ?></small>
-                </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p>No notifications</p>
-        <?php endif; ?>
-    </div>
-</div>
-
-<!-- ===== MOBILE BOTTOM NAV ===== -->
-<div class="bottom-nav">
-<nav>
-    <a href="advisor.php" data-page="advisor"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
-    <a href="advisees.php" data-page="advisees"><i class="ri-group-line"></i><span>Advisees</span></a>
-    <a href="advisor_profile.php" data-page="advisor_profile"><i class="ri-user-line"></i><span>Profile</span></a>
-    <a href="javascript:void(0)" id="openNotifMobile"><i class="ri-notification-3-line"></i><span>Notifications</span></a>
-    
-   
-    <a href="home.php" data-page="home"><i class="ri-logout-box-line"></i><span>Logout</span></a>
-</nav>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
-    /* ===== ACTIVE PAGE ===== */
     const currentPage = window.location.pathname.split('/').pop().replace('.php','') || 'advisor';
     document.querySelectorAll('.bottom-nav a').forEach(link => {
         if (link.dataset.page === currentPage) {
@@ -178,7 +404,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    /* ===== MODAL HANDLERS ===== */
     const modal = document.getElementById('notifModal');
     const openDesktop = document.getElementById('openNotifDesktop');
     const openMobile = document.getElementById('openNotifMobile');
@@ -192,4 +417,130 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === modal) modal.classList.remove('active');
     });
 });
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line';
+    toast.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+async function markAsReadAdvisor(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'mark_read');
+        formData.append('notification_id', notificationId);
+        
+        const response = await fetch('php/mark_notification_read.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const notifCard = document.querySelector(`.notification-item[data-notif-id="${notificationId}"]`);
+            if (notifCard) {
+                notifCard.classList.remove('unread');
+                notifCard.classList.add('read');
+                
+                const newBadge = notifCard.querySelector('.new-badge');
+                if (newBadge) newBadge.remove();
+                
+                const markReadBtn = notifCard.querySelector('.mark-read-btn');
+                if (markReadBtn) markReadBtn.remove();
+            }
+            
+            updateBadgeCount(-1);
+            showToast('Marked as read', 'success');
+        } else {
+            showToast(data.message || 'Failed to mark as read', 'error');
+        }
+    } catch (error) {
+        showToast('Network error occurred', 'error');
+    }
+}
+
+async function deleteNotificationAdvisor(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('notification_id', notificationId);
+        
+        const response = await fetch('php/mark_notification_read.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const notifCard = document.querySelector(`.notification-item[data-notif-id="${notificationId}"]`);
+            if (notifCard) {
+                const wasUnread = notifCard.classList.contains('unread');
+                
+                notifCard.style.opacity = '0';
+                notifCard.style.transform = 'translateX(400px)';
+                notifCard.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    notifCard.remove();
+                    
+                    const remainingCards = document.querySelectorAll('.notification-item');
+                    if (remainingCards.length === 0) {
+                        const notifBody = document.querySelector('.notif-body');
+                        notifBody.innerHTML = `
+                            <div class="no-notifs">
+                                <i class="ri-notification-off-line"></i>
+                                <p>No notifications</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+                
+                if (wasUnread) {
+                    updateBadgeCount(-1);
+                }
+            }
+            
+            showToast('Notification deleted', 'success');
+        } else {
+            showToast(data.message || 'Failed to delete notification', 'error');
+        }
+    } catch (error) {
+        showToast('Network error occurred', 'error');
+    }
+}
+
+function updateBadgeCount(change) {
+    const badge = document.getElementById('notifCount');
+    const badgeMobile = document.querySelector('.notif-badge-mobile');
+    
+    if (badge) {
+        let count = parseInt(badge.textContent) + change;
+        if (count <= 0) {
+            badge.remove();
+        } else {
+            badge.textContent = count;
+        }
+    }
+    
+    if (badgeMobile) {
+        let count = parseInt(badgeMobile.textContent) + change;
+        if (count <= 0) {
+            badgeMobile.remove();
+        } else {
+            badgeMobile.textContent = count;
+        }
+    }
+}
 </script>

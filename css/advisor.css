@@ -260,6 +260,362 @@
     scrollbar-color: #8B0000 #f1f1f1;
 }
 
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px;
+    animation: slideIn .3s ease-out;
+    font-size: 14px
+}
+
+.toast-notification.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745
+}
+
+.toast-notification.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545
+}
+
+.toast-notification.warning {
+    background: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107
+}
+
+.toast-notification i {
+    font-size: 20px
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1
+    }
+}
+
+.toast-notification.removing {
+    animation: slideOut .3s ease-in
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1
+    }
+
+    to {
+        transform: translateX(400px);
+        opacity: 0
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg)
+    }
+
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+.autocomplete-wrapper {
+    position: relative;
+    width: 100%
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 9999;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, .1)
+}
+
+.autocomplete-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center
+}
+
+.autocomplete-item:hover {
+    background: #f0f4ff
+}
+
+.autocomplete-item .student-id {
+    font-weight: 600;
+    color: #333
+}
+
+.autocomplete-item .student-name {
+    color: #666;
+    font-size: 12px
+}
+
+.autocomplete-item .student-prog {
+    font-size: 11px;
+    background: #e8f0fe;
+    color: #1a73e8;
+    padding: 2px 6px;
+    border-radius: 10px
+}
+
+.selected-students-box {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 10px
+}
+
+.selected-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #e8f0fe;
+    color: #1a73e8;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    border: 1px solid #c5d8fb
+}
+
+.selected-tag .remove-tag {
+    cursor: pointer;
+    color: #e53935;
+    font-weight: bold;
+    font-size: 15px;
+    line-height: 1
+}
+
+.selected-tag .remove-tag:hover {
+    color: #b71c1c
+}
+
+.member-item-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    gap: 6px
+}
+
+.member-item-compact:hover {
+    background: #fff5f5
+}
+
+.member-item-compact .member-left {
+    display: flex;
+    align-items: center;
+    gap: 6px
+}
+
+.remove-member-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #dc3545;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+    line-height: 1;
+    transition: background .2s
+}
+
+.remove-member-btn:hover {
+    background: #fdecea;
+    color: #b71c1c
+}
+
+.delete-group-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 20px;
+    line-height: 1;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bolder;
+}
+
+.delete-group-btn:hover {
+    background: #fdecea;
+    color: #b71c1c;
+    transform: scale(1.1)
+}
+
+.milestone-step-num {
+    min-width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #666;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0
+}
+
+.milestone-step-num.done {
+    background: #28a745;
+    color: #fff
+}
+
+.milestone-step-body {
+    flex: 1
+}
+
+.milestone-upload-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px
+}
+
+.milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px
+}
+
+.milestone-title-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1
+}
+
+.milestone-title-status>div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px
+}
+
+.milestone-title-status strong {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.4
+}
+
+.milestone-title-status small {
+    color: #666;
+    font-weight: normal;
+    font-size: 12px;
+    line-height: 1.3;
+    margin: 0
+}
+
+.milestone-upload-btn {
+    padding: 8px 16px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap
+}
+
+.milestone-upload-btn:hover {
+    background: #0056b3
+}
+
+.milestone-file-details {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 13px
+}
+
+.milestone-file-details p {
+    margin: 4px 0;
+    color: #555
+}
+
+.milestone-file-details .preview-btn {
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: #17a2b8;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px
+}
+
+.milestone-file-details .preview-btn:hover {
+    background: #138496
+}
+
+.status-pending_approval {
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600
+}
+
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600
+}
+
+
+
 .my-groups-container::-webkit-scrollbar {
     width: 10px;
 }
@@ -1880,6 +2236,12 @@
     justify-content: flex-end;
 }
 
+
+
+
+
+
+
 .checklist-modal-buttons button {
     padding: 10px 20px;
     border: none;
@@ -1889,7 +2251,6 @@
     font-size: 0.95em;
     transition: all 0.3s ease;
 }
-
 @media (max-width: 1024px) {
     .members-grid {
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1976,7 +2337,11 @@
     .main-content {
         padding: 15px 10px;
     }
-
+    #iconz{
+        width: 22% !important;
+        color: white !important;
+        margin-right: 0;
+    }
     #head {
         font-size: 1.5em;
         margin-bottom: 15px;

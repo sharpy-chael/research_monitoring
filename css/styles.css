@@ -1,196 +1,487 @@
+/* ============================================================
+   Research Monitoring System — Portal Stylesheet
+   Aesthetic: Refined Academic / Institutional Prestige
+   ============================================================ */
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── Custom Properties ─────────────────────────────────────── */
+:root {
+  --navy:      #0d1b3e;
+  --navy-mid:  #162347;
+  --maroon:    #8b1a1a;
+  --maroon-lt: #b52a2a;
+  --gold:      #c9a84c;
+  --gold-lt:   #e8c96a;
+  --cream:     #f5f0e8;
+  --white:     #ffffff;
+  --glass-bg:  rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(201, 168, 76, 0.25);
+  --shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-    background-color: #ffffff;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  background-color: var(--navy);
+  color: var(--white);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  position: relative;
 }
-.main{
-    margin-bottom: 30px;
+
+/* ── Animated Background ────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(139, 26, 26, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 85% 85%, rgba(201, 168, 76, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, var(--navy-mid) 0%, var(--navy) 100%);
+  z-index: -2;
 }
+
+/* Floating orbs */
+body::after {
+  content: '';
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 26, 26, 0.12) 0%, transparent 70%);
+  top: -200px;
+  right: -150px;
+  z-index: -1;
+  animation: floatOrb 12s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrb {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-40px, 60px) scale(1.1); }
+}
+
+/* Subtle grid overlay */
+.body-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(201, 168, 76, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 76, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
 .header {
-    background-color: #a00000;
-    color: white;
-    text-align: center;
-    padding: 20px 10px;
-    border-radius: 0 0 40px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 48px;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+  background: rgba(13, 27, 62, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  animation: slideDown 0.6s ease both;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .header .logo {
-    width: 65px;
-    height: 65px;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(201, 168, 76, 0.3));
+  flex-shrink: 0;
 }
+
+.header h1 {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.75rem, 1.8vw, 1.05rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1.3;
+}
+
+/* Gold accent line under header text */
+.header h1::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 2px;
+  background: var(--gold);
+  margin-top: 5px;
+  border-radius: 2px;
+}
+
+/* ── Main ───────────────────────────────────────────────────── */
 .main {
-    flex: 1;
-    text-align: center;
-    padding: 40px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px 48px;
 }
 
+/* ── System Title ───────────────────────────────────────────── */
 .system-title {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin-bottom: 40px;
-    color: #111;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(1.6rem, 4vw, 2.8rem);
+  color: var(--white);
+  text-align: center;
+  margin-bottom: 12px;
+  letter-spacing: 0.01em;
+  animation: fadeUp 0.7s 0.2s ease both;
+  position: relative;
 }
 
+.system-title::before {
+  content: '— ';
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 0.6em;
+  vertical-align: middle;
+}
+
+.system-title::after {
+  content: ' —';
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 0.6em;
+  vertical-align: middle;
+}
+
+/* Subtitle tagline */
+.main::before {
+  content: 'Select your role to continue';
+  display: block;
+  font-size: 0.88rem;
+  color: rgba(245, 240, 232, 0.5);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: -4px;
+  margin-bottom: 52px;
+  animation: fadeUp 0.7s 0.35s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Portal Container ───────────────────────────────────────── */
 .portal-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 40px;
-    flex-wrap: wrap;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    justify-items: center;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 1100px;
 }
 
+/* ── Portal Cards ───────────────────────────────────────────── */
 .portal-card {
-    background: #f9f9f9;
-    border-radius: 15px;
-    width: 100%;
-    max-width: 400px;
-    height: 243px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-    overflow: hidden;
-    text-align: center;
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  cursor: pointer;
 
+  /* Staggered entrance */
+  opacity: 0;
+  animation: cardReveal 0.65s ease forwards;
 }
 
-@media (max-width: 900px) {
-    .portal-container {
-        grid-template-columns: 1fr;
-        max-width: 400px;
-        margin: auto;
-    }
+.portal-card:nth-child(1) { animation-delay: 0.45s; }
+.portal-card:nth-child(2) { animation-delay: 0.58s; }
+.portal-card:nth-child(3) { animation-delay: 0.71s; }
+.portal-card:nth-child(4) { animation-delay: 0.84s; }
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(32px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* Shimmer highlight on card top */
+.portal-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.6), transparent);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+/* Role-colored accent stripe */
+.portal-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  transform: scaleX(0);
+  transition: transform var(--transition);
+  transform-origin: left;
+}
+
+.portal-card.admin::after    { background: linear-gradient(90deg, var(--maroon), var(--maroon-lt)); }
+.portal-card.coordinator::after { background: linear-gradient(90deg, #1a5f8b, #2a8bbf); }
+.portal-card.adviser::after  { background: linear-gradient(90deg, #1a6b3a, #2a9b5a); }
+.portal-card.student::after  { background: linear-gradient(90deg, var(--gold), var(--gold-lt)); }
 
 .portal-card:hover {
-    transform: translateY(-5px);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-deep);
+  border-color: rgba(201, 168, 76, 0.5);
 }
 
+.portal-card:hover::before { opacity: 1; }
+.portal-card:hover::after  { transform: scaleX(1); }
+
+/* ── Card Header ─────────────────────────────────────────────── */
 .card-header {
-    color: #fff;
-    font-weight: 600;
-    padding: 15px 0 25px;
-    position: relative;
+  padding: 40px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  position: relative;
 }
 
-.card-header .admin {
-    width: 55px;
-    height: 55px;
-    display: block;
-    margin: 0 auto 8px auto;
+/* Icon circle backdrop */
+.card-header::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform var(--transition), background var(--transition);
 }
-.card-header .advisor {
-    width: 55px;
-    height: 55px;
-    display: block;
-    margin: 0 auto 8px auto;
+
+.portal-card:hover .card-header::before {
+  transform: scale(1.12);
+  background: rgba(255, 255, 255, 0.07);
 }
-.card-header .student {
-    width: 55px;
-    height: 55px;
-    display: block;
-    margin: 0 auto 8px auto;
+
+/* Card icons */
+.card-header img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  filter: brightness(0) invert(1) opacity(0.85);
+  transition: transform var(--transition), filter var(--transition);
 }
+
+.portal-card:hover .card-header img {
+  transform: translateY(-4px) scale(1.08);
+  filter: brightness(0) invert(1) opacity(1);
+}
+
+/* Role label */
 .card-header p {
-    font-size: 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream);
+  transition: color var(--transition);
 }
 
-.card-header::after {
-    content: "";
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-}
+.portal-card.admin    .card-header p { color: #e89090; }
+.portal-card.coordinator .card-header p { color: #90c8e8; }
+.portal-card.adviser  .card-header p { color: #90e8b4; }
+.portal-card.student  .card-header p { color: var(--gold-lt); }
 
-.admin .card-header { background-color: #28a745; }
-.admin .card-header::after { border-top: 11px solid #28a745; }
-
-.coordinator .card-header { background-color: #9aa728; }
-.coordinator .card-header::after { border-top: 11px solid #94a728; }
-
-.adviser .card-header { background-color: #a00000; }
-.adviser .card-header::after { border-top: 10px solid #a00000; }
-
-.student .card-header { background-color: #4285f4; }
-.student .card-header::after { border-top: 10px solid #4285f4; }
-
+/* ── Card Body ──────────────────────────────────────────────── */
 .card-body {
-    padding: 43px 20px 35px;
-}
-.btn {
-    display: block;
-    width: 100%;
-    padding: 10px 0;
-    border-radius: 5px;
-    font-weight: bold;
-    text-decoration: none;
-    text-align: center;
-    transition: all 0.3s;
-    color: #fff;
+  padding: 0 24px 36px;
+  display: flex;
+  justify-content: center;
 }
 
-.admin .btn-login { background-color: #28a745; }
-.coordinator .btn-login{background-color: #98a728; }
-.adviser .btn-login { background-color: #a00000; }
-.student .btn-login { background-color: #4285f4; }
+/* ── Login Button ───────────────────────────────────────────── */
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 11px 36px;
+  border-radius: 50px;
+  border: 1.5px solid rgba(201, 168, 76, 0.4);
+  background: rgba(201, 168, 76, 0.08);
+  color: var(--gold-lt);
+  transition: background var(--transition), border-color var(--transition),
+              color var(--transition), transform var(--transition), box-shadow var(--transition);
+  position: relative;
+  overflow: hidden;
+  /* Create stacking context so children stack correctly */
+  isolation: isolate;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--maroon) 100%);
+  opacity: 0;
+  transition: opacity var(--transition);
+  border-radius: 50px;
+  z-index: -1; /* sits BEHIND the text content */
+}
+
+/* Ensure text always sits ABOVE the ::before gradient overlay */
+.btn span { position: relative; z-index: 1; }
 
 .btn:hover {
-    opacity: 0.9;
+  border-color: var(--gold);
+  /* White text stays visible on the gold→maroon gradient */
+  color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201, 168, 76, 0.3);
 }
+
+.btn:hover::before { opacity: 1; }
+
+/* Ripple effect on click */
+.btn:active { transform: translateY(0) scale(0.97); }
+
+/* Text color states for bare <a> (no inner <span>) */
+.btn-login {
+  color: var(--gold-lt);
+}
+
+/* White text on hover so LOGIN is always legible over the gradient */
+.btn-login:hover {
+  color: var(--white);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
 .footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background-color: #a00000;
-    color: #fff;
-    text-align: center;
-    padding: 15px;
-    border-radius: 40px 40px 0 0;
-    font-size: 0.9rem;
+  text-align: center;
+  padding: 20px 24px;
+  font-size: 0.78rem;
+  color: rgba(245, 240, 232, 0.3);
+  letter-spacing: 0.08em;
+  border-top: 1px solid rgba(201, 168, 76, 0.1);
+  animation: fadeUp 0.7s 1s ease both;
 }
-@media (max-width: 600px) {
 
-    .header {
-        flex-direction: column; 
-        padding: 15px 10px;
-        border-radius: 0 0 25px 25px;
-    }
+/* ── Responsive: Tablet / Split-screen ─────────────────────── */
+@media (max-width: 960px) {
+  .portal-container {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 620px;
+    gap: 20px;
+  }
 
-    .header .logo {
-        width: 50px;
-        height: 50px;
-    }
+  .main {
+    padding: 48px 20px 40px;
+  }
 
-    .header h1 {
-        font-size: 1.1rem; 
-        line-height: 1.3;
-        text-align: center;
-        padding: 0 10px;
-    }
+  .header {
+    padding: 18px 28px;
+  }
+}
 
-    .system-title {
-        font-size: 1.4rem;
-    }
+@media (max-width: 680px) {
+  .header {
+    padding: 16px 20px;
+    gap: 12px;
+  }
 
-    .portal-container {
-        grid-template-columns: 1fr; 
-        gap: 25px;
-    }
+  .header .logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .header h1 {
+    font-size: 0.72rem;
+  }
+
+  .system-title {
+    font-size: clamp(1.3rem, 6vw, 1.8rem);
+  }
+
+  .portal-container {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    max-width: 360px;
+    width: 100%;
+  }
+
+  .card-header {
+    padding: 28px 16px 20px;
+    gap: 12px;
+  }
+
+  .card-header img {
+    width: 46px;
+    height: 46px;
+  }
+
+  .card-header p {
+    font-size: 0.85rem;
+  }
+
+  .card-body {
+    padding: 0 16px 24px;
+  }
+
+  .btn {
+    padding: 9px 24px;
+    font-size: 0.75rem;
+  }
+}
+
+/* single column already covers small phones via the 680px breakpoint above */
+
+/* ── Accessibility: Reduced motion ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.1ms !important;
+  }
 }

@@ -1,20 +1,21 @@
 <?php
 session_start();
-include('connect.php');
+include("connect.php");
+include('php/get_setting.php');
+include("check_session.php");
+
 
 if (!isset($_SESSION['submit']) || $_SESSION['role'] !== 'admin') {
     header('Location: home.php');
     exit;
 }
 
-// Fetch all settings data
-$programs = $con->query("SELECT * FROM programs ORDER BY code")->fetchAll(PDO::FETCH_ASSOC);
-$academicYears = $con->query("SELECT * FROM academic_years ORDER BY year_start DESC, semester")->fetchAll(PDO::FETCH_ASSOC);
-$researchStatuses = $con->query("SELECT * FROM research_statuses ORDER BY display_order")->fetchAll(PDO::FETCH_ASSOC);
+$programs        = $con->query("SELECT * FROM programs ORDER BY code")->fetchAll(PDO::FETCH_ASSOC);
+$academicYears   = $con->query("SELECT * FROM academic_years ORDER BY year_start DESC, semester")->fetchAll(PDO::FETCH_ASSOC);
+$researchStatuses= $con->query("SELECT * FROM research_statuses ORDER BY display_order")->fetchAll(PDO::FETCH_ASSOC);
 
-// Get statistics
 $totalStudents = $con->query("SELECT COUNT(*) FROM student")->fetchColumn();
-$totalGroups = $con->query("SELECT COUNT(*) FROM groups")->fetchColumn();
+$totalGroups   = $con->query("SELECT COUNT(*) FROM groups")->fetchColumn();
 $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
 ?>
 <!DOCTYPE html>
@@ -29,10 +30,10 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
 </head>
 <body>
     <?php include("templates/aside_admin.html"); ?>
-    
+
     <main class="main-content">
         <h1><i class="ri-settings-3-line"></i> Academic Settings</h1>
-        
+
         <!-- Statistics Cards -->
         <div class="stats-row">
             <div class="stat-card">
@@ -64,7 +65,7 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
             </div>
         </div>
 
-        <!-- Settings Tabs -->
+        <!-- Tabs -->
         <div class="tabs-container">
             <button class="tab-btn active" onclick="switchTab('programs')">
                 <i class="ri-book-line"></i> Programs
@@ -85,7 +86,6 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
                     <i class="ri-add-line"></i> Add Program
                 </button>
             </div>
-            
             <div class="table-wrapper">
                 <table class="settings-table">
                     <thead>
@@ -131,37 +131,54 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
                     <i class="ri-add-line"></i> Add Academic Year
                 </button>
             </div>
-            
             <div class="table-wrapper">
                 <table class="settings-table">
                     <thead>
                         <tr>
-                            <th>Academic Year</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
                             <th>Semester</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($academicYears as $ay): ?>
-                            <?php 
-                                $semesterText = ['1' => 'First Semester', '2' => 'Second Semester', '3' => 'Summer'][strval($ay['semester'])];
-                            ?>
-                            <tr class="<?= $ay['is_active'] ? 'active-ay' : '' ?>">
-                                <td><strong><?= $ay['year_start'] ?> - <?= $ay['year_end'] ?></strong></td>
+                        <?php foreach ($academicYears as $ay):
+                            $semesterText = ['1' => 'First Semester', '2' => 'Second Semester', '3' => 'Summer'][strval($ay['semester'])];
+                            $today        = date('Y-m-d');
+                            // Auto-expired: end date has passed regardless of is_active flag
+                            $expired      = $ay['year_end'] < $today;
+                            // Truly active = is_active in DB AND not yet expired
+                            $isLive       = $ay['is_active'] && !$expired;
+                        ?>
+                            <tr class="<?= $isLive ? 'active-ay' : ($expired ? 'expired-row' : 'inactive-row') ?>">
+                                <td><strong><?= htmlspecialchars($ay['year_start']) ?></strong></td>
+                                <td><strong><?= htmlspecialchars($ay['year_end']) ?></strong></td>
                                 <td><?= $semesterText ?></td>
                                 <td>
-                                    <span class="status-badge <?= $ay['is_active'] ? 'active' : 'inactive' ?>">
-                                        <?= $ay['is_active'] ? 'Active' : 'Inactive' ?>
-                                    </span>
+                                    <?php if ($expired): ?>
+                                        <span class="status-badge expired">Expired</span>
+                                    <?php elseif ($isLive): ?>
+                                        <span class="status-badge active">Active</span>
+                                    <?php else: ?>
+                                        <span class="status-badge inactive">Inactive</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="action-buttons">
                                     <button class="btn-edit" onclick='editItem("academic-year", <?= json_encode($ay) ?>)'>
                                         <i class="ri-edit-line"></i>
                                     </button>
-                                    <button class="btn-toggle" onclick='setActiveAY(<?= $ay['id'] ?>, <?= $ay['is_active'] ? "false" : "true" ?>)'>
-    <i class="ri-toggle-<?= $ay['is_active'] ? 'fill' : 'line' ?>"></i>
-</button>
+                                    <?php if (!$expired): ?>
+                                        <button class="btn-toggle" onclick='setActiveAY(<?= $ay['id'] ?>, <?= $ay['is_active'] ? "false" : "true" ?>)'
+                                                title="<?= $ay['is_active'] ? 'Deactivate' : 'Activate' ?>">
+                                            <i class="ri-toggle-<?= $ay['is_active'] ? 'fill' : 'line' ?>"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <!-- Expired AYs cannot be re-activated -->
+                                        <button class="btn-toggle" disabled title="Expired — cannot reactivate" style="opacity:0.4;cursor:not-allowed;">
+                                            <i class="ri-toggle-line"></i>
+                                        </button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -178,7 +195,6 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
                     <i class="ri-add-line"></i> Add Status
                 </button>
             </div>
-            
             <div class="table-wrapper">
                 <table class="settings-table">
                     <thead>
@@ -220,6 +236,7 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
                 </table>
             </div>
         </div>
+
         <div class="space"></div>
     </main>
 
@@ -229,39 +246,37 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">&times;</button>
             <h3 id="modalTitle">Add Item</h3>
-            
+
             <form id="settingsForm">
-                <input type="hidden" id="itemId" name="item_id">
-                <input type="hidden" id="itemType" name="item_type">
+                <input type="hidden" id="itemId"     name="item_id">
+                <input type="hidden" id="itemType"   name="item_type">
                 <input type="hidden" id="formAction" name="action">
-                
+
                 <!-- Program Fields -->
                 <div class="form-group" id="programCodeGroup">
                     <label>Program Code <span class="required">*</span></label>
                     <input type="text" id="programCode" name="code" placeholder="e.g., BSIT">
                 </div>
-                
                 <div class="form-group" id="programNameGroup">
                     <label>Program Name <span class="required">*</span></label>
                     <input type="text" id="programName" name="name" placeholder="e.g., Bachelor of Science in Information Technology">
                 </div>
-                
                 <div class="form-group" id="programDescGroup">
                     <label>Description</label>
                     <textarea id="programDesc" name="description" rows="3"></textarea>
                 </div>
-                
-                <!-- Academic Year Fields -->
+
+                <!-- Academic Year Fields — now full date pickers -->
                 <div class="form-group" id="yearStartGroup">
-                    <label>Start Year <span class="required">*</span></label>
-                    <input type="number" id="yearStart" name="year_start" placeholder="2024">
+                    <label>Start Date <span class="required">*</span></label>
+                    <input type="date" id="yearStart" name="year_start">
+                    <small class="field-hint"></small>
                 </div>
-                
                 <div class="form-group" id="yearEndGroup">
-                    <label>End Year <span class="required">*</span></label>
-                    <input type="number" id="yearEnd" name="year_end" placeholder="2025">
+                    <label>End Date <span class="required">*</span></label>
+                    <input type="date" id="yearEnd" name="year_end">
+                    <small class="field-hint">AY auto-expires after this date</small>
                 </div>
-                
                 <div class="form-group" id="semesterGroup">
                     <label>Semester <span class="required">*</span></label>
                     <select id="semester" name="semester">
@@ -270,28 +285,25 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
                         <option value="3">Summer</option>
                     </select>
                 </div>
-                
+
                 <!-- Research Status Fields -->
                 <div class="form-group" id="statusNameGroup">
                     <label>Status Name <span class="required">*</span></label>
                     <input type="text" id="statusName" name="status_name" placeholder="e.g., Proposal">
                 </div>
-                
                 <div class="form-group" id="statusDescGroup">
                     <label>Description</label>
                     <textarea id="statusDesc" name="status_description" rows="3"></textarea>
                 </div>
-                
                 <div class="form-group" id="statusColorGroup">
                     <label>Color</label>
                     <input type="color" id="statusColor" name="color" value="#007bff">
                 </div>
-                
                 <div class="form-group" id="displayOrderGroup">
                     <label>Display Order</label>
                     <input type="number" id="displayOrder" name="display_order" value="0">
                 </div>
-                
+
                 <div class="modal-buttons">
                     <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn-submit">Save</button>
@@ -302,5 +314,9 @@ $totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
 
     <script src="js/timeout.js"></script>
     <script src="js/settings.js"></script>
+    <script>
+        const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
+    </script>
+    <script src="js/session_monitor.js"></script>
 </body>
 </html>

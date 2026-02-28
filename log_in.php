@@ -14,7 +14,6 @@ if (!empty($_POST['submit'])) {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row && password_verify($password, $row['pass_word'])) {
-        // Check if account is active (if admin table has is_active column)
         if (isset($row['is_active']) && !$row['is_active']) {
             $_SESSION['error_message'] = "Your account has been deactivated. Contact administrator.";
             header("Location: log_in.php");
@@ -49,7 +48,6 @@ if (!empty($_POST['submit'])) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
-
     <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
     <title>Admin Log In</title>
 </head>
@@ -59,32 +57,30 @@ if (!empty($_POST['submit'])) {
         <?php unset($_SESSION['error_message']); ?>
     <?php endif; ?>
     <div class="wrappers">
-        <a href="portal.php"><i class='bx  bxs-arrow-left-stroke'  ></i></a>
-            <form action="" method="post">
-                    <h1>Administrator</h1>
-                <div class="input">
-                    <label for="Administrator">Username</label>
-                    <input type="text" name="name" placeholder="Enter your Username" required>
-                    <i class='bxr  bx-user'  ></i> 
-                </div>
-                <div class="input">
-                    <label for="Password">Password</label>
-                    <input type="password" name="password" placeholder="Enter your Password">
-                    <i class='bxr  bx-lock'  ></i>
-                </div>
-                <div class="btn">
-                    <input type="submit" name="submit" value="Log In">
-                    
-                </div >
-                <div class="a">
-                    <p>Welcome, <a href=" ">Administrator</a>.</p> 
-                </div>
-           </form> 
-        </div>
+        <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
+        <form action="" method="post">
+            <h1>Administrator</h1>
+            <div class="input">
+                <label for="Administrator">Username</label>
+                <input type="text" name="name" placeholder="Enter your Username" required>
+                <i class='bxr bx-user'></i>
+            </div>
+            <div class="input">
+                <label for="Password">Password</label>
+                <input type="password" name="password" placeholder="Enter your Password">
+                <i class='bxr bx-lock'></i>
+            </div>
+            <div class="btn">
+                <input type="submit" name="submit" value="Log In">
+            </div>
+            <div class="a">
+                <p>Welcome, <a href="#">Administrator</a>.</p>
+            </div>
+        </form>
     </div>
     <footer class="footer">
         <p>© 2025 Research Monitoring System</p>
-    </footer> 
-    <script src="js/timeout.js"></script> 
+    </footer>
+    <script src="js/timeout.js"></script>
 </body>
 </html>

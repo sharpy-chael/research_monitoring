@@ -1,9 +1,9 @@
 <!-- advisor.php -->
 <?php
-include("connect.php");
 session_start();
+include("connect.php");
 include('php/get_setting.php');
-
+include("check_session.php");
 // Check maintenance mode (only coordinators/admins can access)
 if (getSettingBool($con, 'maintenance_mode', false)) {
     // Allow coordinators to access
@@ -190,7 +190,7 @@ foreach ($assignedGroups as $g) {
                 <p class="chart-subtitle">Track group performance over time</p>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/advisor-qVfMtLaX.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/advisor-BM-cpvB-.js" defer></script>
         </div>
     </div>
     
@@ -202,15 +202,18 @@ foreach ($assignedGroups as $g) {
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
 document.getElementById('currentDate').textContent = currentDate;
+
+ const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
 </script>
 
 <script src="js/timeout.js"></script>
-<script>
+<!-- <script>
 // Display current date
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
 document.getElementById('currentDate').textContent = currentDate;
-</script>
+</script> -->
 <script src="js/notifications.js"></script>
+<script src="js/session_monitor.js"></script>
 </body>
 </html>

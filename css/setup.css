@@ -234,6 +234,64 @@
 .space {
     height: 20px;
 }
+
+
+.pending-titles-section{background:#fff;border-radius:8px;padding:24px;margin-bottom:30px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #e9ecef}
+.section-header h2{margin:0;font-size:20px;color:#333;display:flex;align-items:center;gap:8px}
+.section-header h2 i{color:#007bff}
+.pending-badge{background:#ff9800;color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600}
+.pending-titles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.title-approval-card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:18px;transition:all .3s;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.title-approval-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.12);transform:translateY(-2px)}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px}
+.group-info h3{margin:0 0 6px;font-size:16px;color:#333}
+.advisor-name{margin:0;font-size:13px;color:#666;display:flex;align-items:center;gap:4px}
+.advisor-name i{font-size:14px}
+.status-tag{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:inline-flex;align-items:center;gap:4px}
+.status-tag.pending{background:#fff3cd;color:#856404}
+.card-body{margin-bottom:15px}
+.title-content{margin-bottom:12px}
+.title-content label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
+.title-content label i{margin-right:4px;color:#007bff}
+.research-title{margin:0;font-size:14px;color:#333;line-height:1.5;background:#f8f9fa;padding:10px;border-radius:4px;border-left:3px solid #007bff}
+.file-info{display:flex;align-items:center;gap:8px;padding:8px;background:#e8f4fd;border-radius:4px;font-size:13px;margin-bottom:10px}
+.file-info i{color:#007bff;font-size:16px}
+.filename{flex:1;color:#333;font-weight:500}
+.view-file-btn{padding:4px 10px;background:#007bff;color:#fff;border-radius:4px;text-decoration:none;font-size:12px;transition:background .2s;display:flex;align-items:center;gap:4px}
+.view-file-btn:hover{background:#0056b3}
+.submission-date{font-size:12px;color:#666;display:flex;align-items:center;gap:4px}
+.submission-date i{color:#999}
+.card-actions{display:flex;gap:10px;padding-top:12px;border-top:1px solid #e9ecef}
+.action-btn{flex:1;padding:10px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.approve-btn{background:#28a745;color:#fff}
+.approve-btn:hover{background:#218838;transform:translateY(-1px);box-shadow:0 2px 6px rgba(40,167,69,.3)}
+.reject-btn{background:#dc3545;color:#fff}
+.reject-btn:hover{background:#c82333;transform:translateY(-1px);box-shadow:0 2px 6px rgba(220,53,69,.3)}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center}
+.modal.active{display:flex}
+.modal-content{background:#fff;border-radius:10px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.modal-header{padding:20px 24px;border-bottom:1px solid #e9ecef;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{margin:0;font-size:18px;color:#333;display:flex;align-items:center;gap:8px}
+.modal-header h3 i{color:#dc3545}
+.modal-close{background:none;border:none;font-size:28px;color:#999;cursor:pointer;line-height:1;padding:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.modal-close:hover{background:#f0f0f0;color:#333}
+.modal-body{padding:24px}
+.modal-group-name{margin:0 0 16px;padding:10px;background:#f8f9fa;border-left:3px solid #007bff;font-weight:600;color:#333;border-radius:4px}
+.modal-label{display:block;font-size:14px;font-weight:600;color:#555;margin-bottom:8px}
+.rejection-textarea{width:100%;min-height:120px;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:14px;font-family:inherit;resize:vertical;transition:border-color .2s}
+.rejection-textarea:focus{outline:none;border-color:#007bff;box-shadow:0 0 0 3px rgba(0,123,255,.1)}
+.modal-footer{padding:16px 24px;border-top:1px solid #e9ecef;display:flex;gap:10px;justify-content:flex-end}
+.modal-btn{padding:10px 20px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.cancel-btn{background:#e9ecef;color:#495057}
+.cancel-btn:hover{background:#dee2e6}
+.submit-btn{background:#dc3545;color:#fff}
+.submit-btn:hover{background:#c82333;box-shadow:0 2px 6px rgba(220,53,69,.3)}
+@media(max-width:768px){.pending-titles-grid{grid-template-columns:1fr}.modal-content{width:95%}}
+
+
+
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .summary-cards {

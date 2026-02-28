@@ -1122,6 +1122,8 @@ html, body {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     border: 1px solid #f0f0f0;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: 100%;
+    min-width: 10%;
 }
 
 .chart-card-coord:hover {

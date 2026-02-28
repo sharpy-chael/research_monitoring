@@ -55,7 +55,7 @@ function deleteMember(studentId, el) {
     .then(res => res.json())
     .then(data => {
         if (data.success) el.parentElement.remove();
-        else alert(data.message || 'Failed to delete student');
+        else showToast(data.message || 'Failed to delete student', 'error');
     });
 }
 
@@ -71,7 +71,7 @@ function promptAddMember(groupId) {
     .then(res => res.json())
     .then(data => {
         if (data.success) location.reload();
-        else alert(data.message || 'Failed to add student');
+        else showToast(data.message || 'Failed to add student', 'error');
     });
 }
 
@@ -86,7 +86,7 @@ function deleteGroup(groupId, el) {
     .then(res => res.json())
     .then(data => {
         if (data.success) el.closest('.group-item').remove();
-        else alert(data.message || 'Failed to delete group');
+        else showToast(data.message || 'Failed to delete group', 'error');
     });
 }
 
@@ -98,10 +98,6 @@ const departmentInput = document.getElementById("department");
 const emailInput = document.getElementById("email");
 const addressInput = document.getElementById("address");
 
-const _userId = typeof userId !== "undefined" && userId ? userId : "";
-const key = (base) => `${base}_${_userId}`;
-
-
 if (editBtn) {
     editBtn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -111,12 +107,11 @@ if (editBtn) {
         const addressDisplay = document.getElementById("displayAddress");
         const departmentDisplay = document.getElementById("displayDepartment");
 
-        if (emailInput) emailInput.value = localStorage.getItem(key("studentEmail")) || emailDisplay?.value || "";
-        if (addressInput) addressInput.value = localStorage.getItem(key("studentAddress")) || addressDisplay?.value || "";
-        if (departmentInput) departmentInput.value = localStorage.getItem(key("advisorDepartment")) || departmentDisplay?.value || "";
+        if (emailInput) emailInput.value = emailDisplay?.value || "";
+        if (addressInput) addressInput.value = addressDisplay?.value || "";
+        if (departmentInput) departmentInput.value = departmentDisplay?.value || "";
     });
 }
-
 
 if (cancelEdit) cancelEdit.addEventListener("click", () => (editModal.style.display = "none"));
 
@@ -124,66 +119,49 @@ window.addEventListener("click", (e) => {
     if (e.target === editModal) editModal.style.display = "none";
 });
 
-
 const genderRadios = document.querySelectorAll('input[name="gender"]');
 
 window.addEventListener("DOMContentLoaded", () => {
-    const departmentDisplay = document.getElementById("displayDepartment");
+    const lastnameInput  = document.getElementById('editLastname');
+    const firstnameInput = document.getElementById('editFirstname');
+    const middleInput    = document.getElementById('editMiddlename');
 
-    const savedDepartment = localStorage.getItem(key("advisorDepartment"));
+    [lastnameInput, firstnameInput, middleInput].forEach(el => {
+        if (el) el.addEventListener('input', buildFullName);
+    });
 
-    if (departmentDisplay && savedDepartment !== null) {
-        departmentDisplay.value = savedDepartment;
-    }
-
-    const savedGender = localStorage.getItem(key("selectedGender"));
-    if (savedGender) {
-        genderRadios.forEach((radio) => (radio.checked = radio.value === savedGender));
-    }
-    const emailDisplay = document.getElementById("displayEmail");
-    const addressDisplay = document.getElementById("displayAddress");
-
-    const savedEmail = localStorage.getItem(key("studentEmail"));
-    const savedAddress = localStorage.getItem(key("studentAddress"));
-
-    if (emailDisplay && savedEmail !== null) {
-        emailDisplay.value = savedEmail;
-    }
-    if (addressDisplay && savedAddress !== null) {
-        addressDisplay.value = savedAddress;
-    }
+    genderRadios.forEach((radio) => {
+        if (radio.dataset.saved) radio.checked = true;
+    });
 });
 
 genderRadios.forEach((radio) => {
-    radio.addEventListener("change", () => localStorage.setItem(key("selectedGender"), radio.value));
+    radio.addEventListener("change", () => {
+        genderRadios.forEach(r => r.removeAttribute("data-saved"));
+        radio.setAttribute("data-saved", "true");
+    });
 });
-
 
 const editForm = document.getElementById("editForm");
 
 if (editForm) {
     editForm.addEventListener("submit", (e) => {
         try {
-            if (emailInput) localStorage.setItem(key("studentEmail"), emailInput.value.trim());
-            if (addressInput) localStorage.setItem(key("studentAddress"), addressInput.value.trim());
-            if (departmentInput) localStorage.setItem(key("advisorDepartment"), departmentInput.value.trim());
-
             const emailDisplay = document.getElementById("displayEmail");
             const addressDisplay = document.getElementById("displayAddress");
             const departmentDisplay = document.getElementById("displayDepartment");
 
-            if (emailDisplay) emailDisplay.value = emailInput.value.trim();
-            if (addressDisplay) addressDisplay.value = addressInput.value.trim();
-            if (departmentDisplay) departmentDisplay.value = departmentInput.value.trim();
+            if (emailDisplay && emailInput) emailDisplay.value = emailInput.value.trim();
+            if (addressDisplay && addressInput) addressDisplay.value = addressInput.value.trim();
+            if (departmentDisplay && departmentInput) departmentDisplay.value = departmentInput.value.trim();
 
-            showGlobalMessage("success", "Personal Info Updated Successfully");
+            showToast("Personal Info Updated Successfully", "success");
         } catch (err) {
             e.preventDefault();
-            showGlobalMessage("error", "An error occurred.");
+            showToast("An error occurred.", "error");
         }
     });
 }
-
 
 const newProfileInput = document.getElementById("newProfileImage");
 const editProfileImg = document.getElementById("editProfileImage");
@@ -218,28 +196,36 @@ function closeModal() {
     if (changePasswordModal) changePasswordModal.style.display = "none";
 }
 
-function showGlobalMessage(type, text) {
-    const msg = document.getElementById("globalMessage");
-    if (!msg) return;
+function showToast(text, type = "success") {
+    const existing = document.querySelector(".toast-notif");
+    if (existing) existing.remove();
 
-    msg.textContent = text;
-    msg.className = `global-message ${type} show`;
+    const toast = document.createElement("div");
+    toast.className = `toast-notif toast-${type}`;
+    toast.textContent = text;
+    document.body.appendChild(toast);
 
-    setTimeout(() => msg.classList.remove("show"), 5000);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => toast.classList.add("toast-show"));
+    });
+
+    setTimeout(() => {
+        toast.classList.remove("toast-show");
+        toast.addEventListener("transitionend", () => toast.remove());
+    }, 4000);
 }
 
-function showModalError(message){
+function showModalError(message) {
     const msg = document.getElementById("modalErrorMsg");
     msg.innerText = message;
     msg.style.display = "block";
-
     setTimeout(() => {
         msg.style.display = "none";
         msg.innerText = "";
     }, 5000);
 }
 
-function submitGroupAssignment(){
+function submitGroupAssignment() {
     const students  = document.getElementById("modalStudentIds").value;
     const leaderId  = document.getElementById("modalLeaderId").value;
     const adviserId = document.getElementById("modalAdviserId").value;
@@ -258,11 +244,7 @@ function submitGroupAssignment(){
     })
     .then(res => res.json())
     .then(data => {
-        if(data.status === "error"){
-            showModalError(data.message);
-        } else {
-            setTimeout(() => location.reload(), 300);
-
-        }
+        if (data.status === "error") showModalError(data.message);
+        else setTimeout(() => location.reload(), 300);
     });
 }

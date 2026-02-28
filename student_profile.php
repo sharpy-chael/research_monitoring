@@ -1,7 +1,9 @@
 <?php
 error_reporting(0);
-include("connect.php");
 session_start();
+include("connect.php");
+include("php/get_setting.php");
+include("check_session.php");
 if (!isset($_SESSION['submit'])){
     header('Location: home.php');
     exit;
@@ -25,7 +27,6 @@ $notificationsStmt->execute([
 ]);
 $notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Count unread notifications
 $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
 $stmt = $con->prepare("SELECT * FROM student WHERE school_id = :school_id");
@@ -33,8 +34,19 @@ $stmt->execute(['school_id' => $school_id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($row) {
-    $_SESSION['images'] = $row['images'];
+    $_SESSION['images']         = $row['images'];
     $_SESSION['research_title'] = $row['research_title'];
+    $_SESSION['email']          = $row['email'];
+    $_SESSION['address']        = $row['address'];
+    $_SESSION['gender']         = $row['gender'];
+    $_SESSION['lastname']       = $row['lastname'];
+    $_SESSION['firstname']      = $row['firstname'];
+    $_SESSION['middlename']     = $row['middlename'];
+
+    $fn = trim($row['firstname'] ?? '');
+    $mn = trim($row['middlename'] ?? '');
+    $ln = trim($row['lastname'] ?? '');
+    $_SESSION['name'] = trim($fn . ($mn ? ' ' . $mn : '') . ($ln ? ' ' . $ln : ''));
 }
 ?>
 <!DOCTYPE html>
@@ -81,8 +93,8 @@ if ($row) {
   <h2>Personal Information</h2>
 
   <div class="gender-row">
-    <label><input type="radio" name="gender" value="Male"> Male</label>
-    <label><input type="radio" name="gender" value="Female"> Female</label>
+    <label><input type="radio" name="gender" disabled value="Male" <?php echo ($_SESSION['gender'] ?? '') === 'Male' ? 'checked' : ''; ?>> Male</label>
+    <label><input type="radio" name="gender" disabled value="Female" <?php echo ($_SESSION['gender'] ?? '') === 'Female' ? 'checked' : ''; ?>> Female</label>
   </div>
 
   <div class="form-group">
@@ -92,12 +104,12 @@ if ($row) {
 
   <div class="form-group">
     <label>Email</label>
-    <input type="text" id="displayEmail" readonly value="">
+    <input type="text" id="displayEmail" readonly value="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>">
   </div>
 
   <div class="form-group">
     <label>Address</label>
-    <input type="text" id="displayAddress" readonly value="">
+    <input type="text" id="displayAddress" readonly value="<?php echo htmlspecialchars($_SESSION['address'] ?? ''); ?>">
   </div>
 
   <div class="form-row">
@@ -117,7 +129,6 @@ if ($row) {
     <div class="recent-upload-grid">
 
     <?php
-    // Fetch uploads
     $stmtUploads = $con->prepare("
         SELECT upload_id, task_name, file_path, original_filename, uploaded_at 
         FROM uploads 
@@ -144,17 +155,12 @@ if ($row) {
             </div>
 
             <div class="upload-card-body">
-              <?php 
-                    $filename = $row['original_filename'];
-                ?>
                 <span class="file-title">
-                    <?= htmlspecialchars($row['task_name']) ?> 
+                    <?= htmlspecialchars($row['task_name']) ?>
                 </span>
-
                 <p class="file-filename">
-                    <?= htmlspecialchars($filename) ?>
+                    <?= htmlspecialchars($row['original_filename']) ?>
                 </p>
-
                 <p class="file-date">
                     <?= date("M d, Y • h:i A", strtotime($row['uploaded_at'])) ?>
                 </p>
@@ -185,12 +191,11 @@ if ($row) {
   document.addEventListener("click", () => {
       document.querySelectorAll(".menu-dropdown").forEach(menu => menu.classList.remove("show"));
   });
+
   document.querySelectorAll(".delete-btn").forEach(btn => {
       btn.addEventListener("click", function (e) {
           e.preventDefault();
-
-          let uploadId = this.getAttribute("data-id");
-
+          const uploadId = this.getAttribute("data-id");
           if (!confirm("Delete this file?")) return;
 
           fetch("php/delete_upload.php", {
@@ -201,81 +206,105 @@ if ($row) {
           .then(res => res.json())
           .then(data => {
               if (data.status === "success") {
-                  alert("File deleted successfully!");
-                  location.reload();
+                  showToast("File deleted successfully!", "success");
+                  setTimeout(() => location.reload(), 1000);
               } else {
-                  alert(data.message);
+                  showToast(data.message, "error");
               }
           });
       });
   });
-
   </script>
 
 </section>
 </main>
 
-<!-- Edit Modal -->
 <div id="editModal" class="edit-modal">
   <div class="edit-modal-content">
     <span class="close-btn" onclick="closeModal()">&times;</span>
-    <h2>Edit Personal Information</h2>
 
-    <form id="editForm" action="php/update_profile.php" method="POST" enctype="multipart/form-data">
-      <label>Full Name</label>
-      <input type="text" name="name" value="<?php echo htmlspecialchars($_SESSION['name']); ?>" required>
+    <div class="modal-header">
+      <h2>Edit Personal Information</h2>
+    </div>
 
-      <label>Program</label>
-      <input type="text" name="program" value="<?php echo htmlspecialchars($_SESSION['program']); ?>" required>
+    <form id="editForm" action="php/update_profile.php" method="POST" enctype="multipart/form-data" style="display:contents;">
+      <div class="modal-body">
+        <label>Last Name</label>
+        <input type="text" name="lastname" id="editLastname" value="<?php echo htmlspecialchars($_SESSION['lastname'] ?? ''); ?>" required>
 
-      <label>Email</label>
-      <input type="email" id="email" placeholder="Enter your email" required>
+        <label>First Name</label>
+        <input type="text" name="firstname" id="editFirstname" value="<?php echo htmlspecialchars($_SESSION['firstname'] ?? ''); ?>" required>
 
-      <label>Address</label>
-      <input type="text" id="address" placeholder="Enter your Address" required>
+        <label>Middle Name</label>
+        <input type="text" name="middlename" id="editMiddlename" value="<?php echo htmlspecialchars($_SESSION['middlename'] ?? ''); ?>">
 
-      <label>Profile Picture</label>
-      <input type="file" name="profile_image" id="newProfileImage">
+        <label>Program</label>
+        <input type="text" name="program" value="<?php echo htmlspecialchars($_SESSION['program']); ?>" required>
 
-      <div class="button-row">
-        <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn-solid">Save Changes</button>
+        <label>Gender</label>
+        <div class="gender-row">
+          <label><input type="radio" name="gender" value="Male" <?php echo ($_SESSION['gender'] ?? '') === 'Male' ? 'checked' : ''; ?>> Male</label>
+          <label><input type="radio" name="gender" value="Female" <?php echo ($_SESSION['gender'] ?? '') === 'Female' ? 'checked' : ''; ?>> Female</label>
+        </div>
+
+        <label>Email</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" value="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>" required>
+
+        <label>Address</label>
+        <input type="text" id="address" name="address" placeholder="Enter your Address" value="<?php echo htmlspecialchars($_SESSION['address'] ?? ''); ?>" required>
+
+        <label>Profile Picture</label>
+        <input type="file" name="profile_image" id="newProfileImage">
+      </div>
+
+      <div class="modal-footer">
+        <div class="button-row">
+          <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn-solid">Save Changes</button>
+        </div>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Change Password Modal -->
 <div id="changePassword" class="change-password">
   <div class="change-modal-content">
     <span class="close-btn" onclick="closeModal()">&times;</span>
-    <h2>Change Password</h2>
 
-    <form id="changePasswordForm" method="POST">
-      <label>Password</label>
-      <input type="password" id="currentPassword" required>
+    <div class="modal-header">
+      <h2>Change Password</h2>
+    </div>
 
-      <label>New Password</label>
-      <input type="password" id="newPassword" required>
+    <form id="changePasswordForm" method="POST" style="display:contents;">
+      <div class="modal-body">
+        <label>Password</label>
+        <input type="password" id="currentPassword" required>
 
-      <label>Confirm Password</label>
-      <input type="password" id="confirmPassword" required>
+        <label>New Password</label>
+        <input type="password" id="newPassword" required>
 
-      <div class="button-row">
-        <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn-solid">Save New Password</button>
+        <label>Confirm Password</label>
+        <input type="password" id="confirmPassword" required>
+      </div>
+
+      <div class="modal-footer">
+        <div class="button-row">
+          <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn-solid">Save New Password</button>
+        </div>
       </div>
     </form>
-
   </div>
 </div>
 
 <script>
   const userId = "<?php echo isset($_SESSION['school_id']) ? $_SESSION['school_id'] : ''; ?>";
+
+  const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
 </script>
 
 <script src="js/edit.js"></script>
 <script src="js/timeout.js"></script>
-
+<script src="js/session_monitor.js"></script>
 </body>
 </html>

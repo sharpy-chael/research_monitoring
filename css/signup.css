@@ -60,7 +60,7 @@ body {
     border: 1px solid #680000;
     border-radius: 10px;
     padding: 40px 35px;
-    width: 420px;
+    width: 450px;
     text-align: center;
     backdrop-filter: blur(5px);
     color: #680000;
@@ -88,7 +88,6 @@ body {
     letter-spacing: 1px;
 }
 
-/* INPUTS */
 .input-group {
     display: flex;
     align-items: center;
@@ -120,7 +119,19 @@ body {
     font-size: 14px;
 }
 
-/* BUTTON */
+.name-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 0;
+}
+.name-row .input-group {
+    flex: 1;
+    margin-bottom: 15px;
+}
+.name-row .input-group.middle {
+    flex: 0 0 90px;
+}
+
 .submit-btn input {
     width: 100%;
     background-color: #680000;
@@ -138,7 +149,6 @@ body {
     background-color: #9b0101;
 }
 
-/* LINK */
 .login-link {
     margin-top: 15px;
     font-size: 14px;
@@ -153,8 +163,6 @@ body {
 .login-link a:hover {
     text-decoration: underline;
 }
-
-/* ADMIN LOGIN */
 
 .container .a{
     font-size: 14px;
@@ -186,8 +194,6 @@ body {
     width: 100%;
 }
 
-/* ADVISOR LOGIN */
-
 .containers .a{
     font-size: 14px;
     text-align: center;
@@ -218,7 +224,6 @@ body {
     width: 100%;
 }
 
-/* STUDENT LOGIN */
 .contain .a{
     font-size: 14px;
     text-align: center;
@@ -249,7 +254,6 @@ body {
     width: 100%;
 }
 
-/* COORDINATOR LOG IN */
 .contains .a{
     font-size: 14px;
     text-align: center;
@@ -293,17 +297,6 @@ body {
     transition: opacity 1s ease;
 }
 
-/* @keyframes fadeIn {
-    from { 
-        opacity: 0; 
-        transform: translateY(-5px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-} */
-
 .success-message {
     position: absolute;
     top: 30px;
@@ -322,31 +315,7 @@ body {
     z-index: 1000;
 }
 
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-}
-/* MOBILE RESPONSIVE DESIGN */
 @media (max-width: 480px) {
-
-  
-
     .container,
     .containers,
     .contain,
@@ -360,10 +329,9 @@ body {
     }
 
     .signup-box {
-        
         width: 100%;
-        max-width: 330px;     /* fits small phones */
-        padding: 25px 20px;   /* smaller padding */
+        max-width: 330px;
+        padding: 25px 20px;
         border-radius: 10px;
     }
 
@@ -382,7 +350,6 @@ body {
         margin-bottom: 20px;
     }
 
-    /* INPUT GROUP */
     .input-group {
         margin-bottom: 12px;
         border-radius: 5px;
@@ -398,7 +365,15 @@ body {
         font-size: 14px;
     }
 
-    /* BUTTON */
+    .name-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .name-row .input-group.middle {
+        flex: 1;
+    }
+
     .submit-btn input {
         padding: 10px;
         font-size: 15px;
@@ -409,21 +384,18 @@ body {
         font-size: 12px;
     }
 
-    /* SMALL NOTICE TEXT */
     .signup-box p {
         font-size: 10px !important;
     }
 
-    /* FOOTER */
     .footer {
         font-size: 0.75rem;
         padding: 10px;
         border-radius: 30px 30px 0 0;
-        position: relative; /* removes overflow issues */
+        position: relative;
         margin-top: 10px;
     }
 }
-
 
 .footer {
     position: absolute;
@@ -436,4 +408,3 @@ body {
     border-radius: 40px 40px 0 0;
     font-size: 0.9rem;
 }
-

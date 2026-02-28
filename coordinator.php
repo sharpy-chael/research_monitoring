@@ -2,10 +2,9 @@
 session_start();
 include ('connect.php');
 include('php/get_setting.php');
+include("check_session.php");
 
-// Check maintenance mode (only coordinators/admins can access)
 if (getSettingBool($con, 'maintenance_mode', false)) {
-    // Allow coordinators to access
     if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'coordinator') {
         ?>
         <!DOCTYPE html>
@@ -65,7 +64,6 @@ if (!isset($_SESSION['submit'])) {
     exit;
 }
 
-// Fetch notifications for the current user
 $notificationsStmt = $con->prepare("
     SELECT id, title, message, priority, created_at, status
     FROM system_notifications
@@ -78,12 +76,8 @@ $notificationsStmt = $con->prepare("
     ORDER BY created_at DESC
     LIMIT 10
 ");
-$notificationsStmt->execute([
-    'user_id' => $_SESSION['id']
-]);
+$notificationsStmt->execute(['user_id' => $_SESSION['id']]);
 $notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Count unread notifications
 $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 ?>
 <!DOCTYPE html>
@@ -91,31 +85,23 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
 <link href="https://cdn.boxicons.com/fonts/basic/boxicons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="css/home.css">
 <link rel="stylesheet" href="css/manage.css">
 <link rel="stylesheet" href="css/notifications.css">
-
 <title>Coordinator Dashboard</title>
-
 <style>
-/* Hide old elements more specifically */
 .main-content > h1:not(.dashboard-header-coord h1) {
     display: none !important;
 }
-
 .main-content > p:first-of-type {
     display: none !important;
 }
-
 .card.progress-card {
     display: none !important;
 }
-
-/* Force white color for dashboard header text */
 .dashboard-header-coord h1,
 .dashboard-header-coord h1 *,
 .dashboard-header-coord p,
@@ -132,13 +118,9 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 }
 </style>
 </head>
-
 <body>
-
 <?php include("templates/aside_coordinator.html"); ?>
-
 <main class="main-content">
-    <!-- Enhanced Dashboard Header -->
     <div class="dashboard-header-coord">
         <div class="header-content-coord">
             <div class="header-text-coord">
@@ -153,8 +135,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
             </div>
         </div>
     </div>
-
-    <!-- Enhanced Progress Card -->
     <div class="progress-card-coord">
         <div class="progress-header-coord">
             <div class="progress-title-coord">
@@ -167,20 +147,42 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
             <div id="progress-bar-fill-enhanced" class="progress-bar-fill-coord" style="width:0%"></div>
         </div>
     </div>
-
-    <!-- Charts Grid -->
     <div class="charts-grid-coord">
         <div class="chart-card-coord">
             <div class="chart-header-coord">
                 <h2><i class="ri-line-chart-line"></i> Analytics Overview</h2>
                 <p class="chart-subtitle-coord">Comprehensive research progress tracking</p>
             </div>
+            <div style="display:flex;gap:12px;margin-bottom:20px;padding:0 20px;">
+                <div style="flex:1;">
+                    <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#555;">Filter by Program</label>
+                    <select id="programFilter" onchange="updateCharts()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff;cursor:pointer;">
+                        <option value="all">All Programs</option>
+                        <?php
+                        $programsStmt = $con->query("SELECT DISTINCT program FROM student WHERE program IS NOT NULL ORDER BY program");
+                        while ($prog = $programsStmt->fetch(PDO::FETCH_ASSOC)):
+                        ?>
+                            <option value="<?= htmlspecialchars($prog['program']) ?>"><?= htmlspecialchars($prog['program']) ?></option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#555;">Filter by Advisor</label>
+                    <select id="advisorFilter" onchange="updateCharts()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff;cursor:pointer;">
+                        <option value="all">All Advisors</option>
+                        <?php
+                        $advisorsStmt = $con->query("SELECT id, name FROM advisor WHERE is_active = TRUE ORDER BY name");
+                        while ($adv = $advisorsStmt->fetch(PDO::FETCH_ASSOC)):
+                        ?>
+                            <option value="<?= $adv['id'] ?>"><?= htmlspecialchars($adv['name']) ?></option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+            </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/coordinator-CnanJDvs.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/coordinator-Cu30PJZb.js" defer></script>
         </div>
     </div>
-
-    <!-- Hidden original elements for script compatibility -->
     <div style="display: none;">
         <h1>Dashboard</h1>
         <p>Welcome, <?= htmlspecialchars($_SESSION['name']); ?>.</p>
@@ -196,21 +198,28 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
             </div>
         </div>
     </div>
-
     <div style="height: 50px;" class="space"></div>
 </main>
-
 <script>
-
-// Display current date
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
 document.getElementById('currentDateCoord').textContent = currentDate;
 
-// Fetch and update progress from coordinator data
+window.updateCharts = function() {
+    const event = new CustomEvent('filtersChanged', {
+        detail: {
+            program: document.getElementById('programFilter').value,
+            advisor: document.getElementById('advisorFilter').value
+        }
+    });
+    window.dispatchEvent(event);
+};
+
 async function updateProgress() {
     try {
-        const response = await fetch('/research_monitoring/data/get_coordinator_data.php');
+        const program = document.getElementById('programFilter')?.value || 'all';
+        const advisor = document.getElementById('advisorFilter')?.value || 'all';
+        const response = await fetch(`/research_monitoring/data/get_coordinator_data.php?program=${program}&advisor=${advisor}`);
         const data = await response.json();
         
         if (data.progress !== undefined) {
@@ -231,11 +240,13 @@ async function updateProgress() {
     }
 }
 
-// Update progress on load and every 30 seconds
 updateProgress();
+window.addEventListener('filtersChanged', updateProgress);
 setInterval(updateProgress, 30000);
 
+const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
 </script>
 <script src="js/notifications.js"></script>
+<script src="js/session_monitor.js"></script>
 </body>
 </html>

@@ -1,691 +1,624 @@
-*{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-     font-family: "Poppins", sans-serif;
-    font-optical-sizing: auto;
-    font-style: normal;
-}
-body{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: azure;
+/* ============================================================
+   Research Monitoring System — Login Pages Stylesheet
+   Covers: login.php (blue) | logged.php (yellow) |
+           log_in.php (green) | loginn.php (red)
+   Shared footer: maroon
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+
+/* ── CSS Variables — Shared ─────────────────────────────────── */
+:root {
+  --maroon:        #7b1a1a;
+  --maroon-lt:     #a02020;
+  --white:         #ffffff;
+  --cream:         #f5f1ec;
+  --glass:         rgba(255, 255, 255, 0.08);
+  --glass-border:  rgba(255, 255, 255, 0.15);
+  --shadow:        0 24px 64px rgba(0, 0, 0, 0.4);
+  --shadow-sm:     0 4px 20px rgba(0, 0, 0, 0.2);
+  --radius:        20px;
+  --transition:    0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Default (blue — login.php) */
+  --accent:        #1a6fbf;
+  --accent-lt:     #3a9be8;
+  --accent-dk:     #0d3d73;
+  --bg-a:          #061d3a;
+  --bg-b:          #0a2d56;
+  --glow:          rgba(26, 111, 191, 0.35);
+  --label:         rgba(200, 225, 255, 0.7);
+  --input-border:  rgba(58, 155, 232, 0.4);
+  --input-focus:   rgba(58, 155, 232, 0.8);
+  --btn-from:      #1a6fbf;
+  --btn-to:        #3a9be8;
+  --heading-color: #90c8f0;
 }
 
-/* student log in */
+/* ── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  background: linear-gradient(135deg, var(--bg-a) 0%, var(--bg-b) 100%);
+  position: relative;
+}
+
+/* ── Animated Background Orbs ───────────────────────────────── */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+  top: -120px;
+  left: -120px;
+  animation: driftA 14s ease-in-out infinite alternate;
+}
+
+body::after {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+  bottom: -100px;
+  right: -100px;
+  animation: driftB 18s ease-in-out infinite alternate;
+}
+
+@keyframes driftA {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(60px, 80px) scale(1.15); }
+}
+
+@keyframes driftB {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-50px, -60px) scale(1.1); }
+}
+
+/* Subtle dot grid */
+body > *:first-child::before {
+  display: none; /* avoid double pseudo on wrapper */
+}
+
+/* ============================================================
+   PER-ROLE THEME OVERRIDES
+   Applied via body class or wrapper class
+   ============================================================ */
+
+/* ── login.php — BLUE (default, no override needed) ─────────── */
+
+/* ── logged.php — YELLOW (Coordinator) ──────────────────────── */
+.wraps,
+body:has(.wraps) {
+  --accent:       #c9860a;
+  --accent-lt:    #f0b429;
+  --accent-dk:    #7a4e00;
+  --bg-a:         #1e1200;
+  --bg-b:         #2e1e00;
+  --glow:         rgba(201, 134, 10, 0.3);
+  --label:        rgba(255, 220, 140, 0.75);
+  --input-border: rgba(240, 180, 41, 0.4);
+  --input-focus:  rgba(240, 180, 41, 0.85);
+  --btn-from:     #c9860a;
+  --btn-to:       #f0b429;
+  --heading-color:#f5c842;
+}
+
+/* ── log_in.php — GREEN (Admin) ──────────────────────────────── */
+.wrappers,
+body:has(.wrappers) {
+  --accent:       #0e7a3a;
+  --accent-lt:    #22b85a;
+  --accent-dk:    #064020;
+  --bg-a:         #011a0a;
+  --bg-b:         #022b12;
+  --glow:         rgba(14, 122, 58, 0.3);
+  --label:        rgba(140, 230, 170, 0.75);
+  --input-border: rgba(34, 184, 90, 0.4);
+  --input-focus:  rgba(34, 184, 90, 0.85);
+  --btn-from:     #0e7a3a;
+  --btn-to:       #22b85a;
+  --heading-color:#6ee89a;
+}
+
+/* ── loginn.php — RED (Adviser) ──────────────────────────────── */
+.wrap,
+body:has(.wrap) {
+  --accent:       #b51a1a;
+  --accent-lt:    #e03a3a;
+  --accent-dk:    #6a0808;
+  --bg-a:         #1a0000;
+  --bg-b:         #2b0404;
+  --glow:         rgba(181, 26, 26, 0.3);
+  --label:        rgba(255, 170, 170, 0.75);
+  --input-border: rgba(224, 58, 58, 0.4);
+  --input-focus:  rgba(224, 58, 58, 0.85);
+  --btn-from:     #b51a1a;
+  --btn-to:       #e03a3a;
+  --heading-color:#f08080;
+}
+
+/* ── Also set body background per role ───────────────────────── */
+body:has(.wraps)   { background: linear-gradient(135deg, #1e1200 0%, #2e1e00 100%); }
+body:has(.wrappers){ background: linear-gradient(135deg, #011a0a 0%, #022b12 100%); }
+body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100%); }
+
+/* ============================================================
+   SHARED WRAPPER / CARD STYLES
+   All four wrappers: .wrapper .wrap .wraps .wrappers
+   ============================================================ */
+.wrapper,
+.wrap,
+.wraps,
+.wrappers {
+  position: relative;
+  z-index: 1;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 48px 44px 40px;
+  width: 100%;
+  max-width: 460px;
+  margin: auto;
+  box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,0.04);
+
+  /* Entrance animation */
+  animation: cardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Top shimmer line */
+.wrapper::before,
+.wrap::before,
+.wraps::before,
+.wrappers::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-lt), transparent);
+  border-radius: 1px;
+}
+
+/* Left accent bar */
+.wrapper::after,
+.wrap::after,
+.wraps::after,
+.wrappers::after {
+  content: '';
+  position: absolute;
+  top: 20%; bottom: 20%;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--accent), transparent);
+  border-radius: 0 3px 3px 0;
+}
+
+/* ── Back arrow link ─────────────────────────────────────────── */
+.wrapper > a,
+.wrap > a,
+.wraps > a,
+.wrappers > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--input-border);
+  color: var(--accent-lt);
+  font-size: 1.3rem;
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  background: rgba(255,255,255,0.04);
+}
+
+.wrapper > a:hover,
+.wrap > a:hover,
+.wraps > a:hover,
+.wrappers > a:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+  transform: translateX(-3px);
+}
+
+/* ── Heading ─────────────────────────────────────────────────── */
+.wrapper h1,
+.wrap h1,
+.wraps h1,
+.wrappers h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin-bottom: 32px;
+  letter-spacing: 0.01em;
+  position: relative;
+  padding-bottom: 14px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+
+.wrapper h1::after,
+.wrap h1::after,
+.wraps h1::after,
+.wrappers h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: 2px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   INPUT GROUPS
+   Student uses .input-box | Admin/Coord/Adviser use .input/.inputed
+   ============================================================ */
+.input-box,
+.input,
+.inputed {
+  position: relative;
+  margin-bottom: 22px;
+  animation: fadeUp 0.6s ease both;
+}
+
+.input-box:nth-child(2) { animation-delay: 0.25s; }
+.input-box:nth-child(3) { animation-delay: 0.35s; }
+.input-box:nth-child(4) { animation-delay: 0.45s; }
+.input:nth-child(2)     { animation-delay: 0.25s; }
+.input:nth-child(3)     { animation-delay: 0.35s; }
+.inputed:nth-child(2)   { animation-delay: 0.25s; }
+.inputed:nth-child(3)   { animation-delay: 0.35s; }
+
+/* Labels */
+.input-box label,
+.input label,
+.inputed label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label);
+  margin-bottom: 8px;
+  transition: color var(--transition);
+}
+
+/* Text / Password inputs */
+.input-box input[type="text"],
+.input-box input[type="password"],
+.input input[type="text"],
+.input input[type="password"],
+.inputed input[type="text"],
+.inputed input[type="password"] {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  color: var(--white);
+  padding: 14px 48px 14px 18px;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.input-box input[type="text"]::placeholder,
+.input-box input[type="password"]::placeholder,
+.input input[type="text"]::placeholder,
+.input input[type="password"]::placeholder,
+.inputed input[type="text"]::placeholder,
+.inputed input[type="password"]::placeholder {
+  color: rgba(255,255,255,0.25);
+  font-weight: 300;
+  font-style: italic;
+}
+
+.input-box input[type="text"]:focus,
+.input-box input[type="password"]:focus,
+.input input[type="text"]:focus,
+.input input[type="password"]:focus,
+.inputed input[type="text"]:focus,
+.inputed input[type="password"]:focus {
+  border-color: var(--input-focus);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06),
+              0 0 16px var(--glow);
+}
+
+/* ── SELECT (Student program dropdown) ───────────────────────── */
 .input-box select {
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    border: 1px solid rgb(17, 156, 144);
-    border-radius: 40px;
-    font-size: 17px;
-    color: navy;
-    padding: 12px 45px 12px 20px;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    /* background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001f1c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); */
-    background-repeat: no-repeat;
-    background-position: right 20px center;
-    background-size: 20px;
-}
-
-.input-box select::placeholder {
-    color: navy;
+  width: 100%;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid var(--input-border) !important;
+  border-radius: 12px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.95rem !important;
+  color: var(--white) !important;
+  padding: 14px 48px 14px 18px !important;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+  background-size: 18px !important;
 }
 
 .input-box select:focus {
-    outline: none;
-    border-color: rgb(17, 156, 144);
+  border-color: var(--input-focus) !important;
+  background-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.06),
+              0 0 16px var(--glow);
 }
 
 .input-box select option {
-    background-color: transparent;
-    color: navy;
-    padding: 5px;
-    border: navy;
+  background-color: #0d1b3e;
+  color: var(--white);
+  padding: 10px;
 }
 
 .input-box select option:disabled {
-    color: navy;
+  color: rgba(255,255,255,0.35);
 }
 
-/* Mobile responsive for select */
-@media (max-width: 480px) {
-    .input-box select {
-        font-size: 14px;
-        padding: 15px 40px 15px 15px;
-        border-radius: 30px;
-        background-position: right 15px center;
-        background-size: 18px;
-    }
-}
-.wrapper{
-    width: 100%;
-    max-width: 420px;
-    background-color:transparent;
-    color: navy;
-    border-radius: 10px;
-    padding: 30px 40px;
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
-}
-.wrapper h1{
-    font-size: 36px;
-    text-align: center;
-}
-.wrapper a i{
-    color: navy;
-    font-weight: bolder;
-    font-size: 50px;
-    transition: color ease 0.3s, font-size ease 0.3s;
-}
-.wrapper a i:hover{
-    color: #8DD8FF;
-    font-size: 48px;
-}
-.wrapper .input-box{
-    position: relative;
-    width: 100%;
-    height: 50px;
-    margin: 30px 0;
-}
-.input-box input{
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    border: 1px solid rgb(17, 156, 144);
-    border-radius: 40px;
-    font-size: 17px;
-    color: rgb(0, 43, 40);
-    padding: 20px 45px 20px 20px;
-}
-.input-box input::placeholder{
-    color: navy;
-}
-.input-box i{
-    position: absolute;
-    right: 20px;
-    top: 70%;
-    transform: translateY(-10%);
-    font-size: 20px;
-}
-.wrapper .btn input{
-    margin-top: 40px;
-    width: 100%;
-    height: 45px;
-    background: white;
-    color: navy;
-    font-weight: bolder;
-    border: none;
-    outline: none;
-    border-radius: 40px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-.wrapper .btn input:hover{
-    color: navy;
-    background-color: rgba(135, 207, 235, 0.529);
+/* ── Input icons (boxicons) ──────────────────────────────────── */
+/* Icons are anchored to the bottom of the input field (not the wrapper)
+   Input height = padding-top(14) + line-height(~1.4*0.95rem≈21px) + padding-bottom(14) ≈ 49px
+   Icon sits centered in that 49px zone from the bottom of the wrapper */
+.input-box i,
+.input i,
+.inputed i {
+  position: absolute;
+  right: 16px;
+  /* Anchor from bottom: 14px bottom-padding + half icon(~9px) = ~23px up from bottom of the input.
+     The input is the last/bottom element in the group so bottom offset works perfectly. */
+  bottom: 14px;
+  transform: none;
+  color: var(--accent-lt);
+  font-size: 1.1rem;
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity var(--transition), color var(--transition);
+  /* vertically center within input's own padding zone */
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
-.wrapper .a{
-    font-size: 14px;
-    text-align: center;
-    margin-top: 20px;
-    margin-bottom: 20px;
+.input-box input:focus ~ i,
+.input input:focus ~ i,
+.inputed input:focus ~ i,
+.input-box select:focus ~ i {
+  opacity: 1;
+  color: var(--accent-lt);
 }
-.wrapper .a a{
-    position: relative;
-    text-decoration: none;
-    color: rgb(0, 217, 255);
-    font-weight: bold;
-    transition: color 0.3s ease;
+
+/* ── Submit Button ───────────────────────────────────────────── */
+.btn {
+  margin-top: 8px;
+  margin-bottom: 20px;
+  animation: fadeUp 0.6s 0.5s ease both;
 }
-.wrapper .a a::after{
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    width: 0;
-    height: 2px;
-    background-color: rgb(0, 9, 91);
-    transition: width 0.3s ease;
+
+.btn input[type="submit"] {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--btn-from) 0%, var(--btn-to) 100%);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+  box-shadow: 0 4px 20px var(--glow);
 }
-.wrapper .a a:hover{
-    color: cyan;
+
+.btn input[type="submit"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity var(--transition);
 }
-.wrapper .a a:hover::after{
-    width: 100%;
+
+.btn input[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px var(--glow);
+  filter: brightness(1.08);
 }
+
+.btn input[type="submit"]:hover::before { opacity: 1; }
+.btn input[type="submit"]:active { transform: translateY(0) scale(0.98); }
+
+/* ── Bottom link ─────────────────────────────────────────────── */
+.a {
+  text-align: center;
+  animation: fadeUp 0.6s 0.6s ease both;
+}
+
+.a p {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.a a {
+  color: var(--accent-lt);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition), text-decoration var(--transition);
+}
+
+.a a:hover {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+/* ── Error message ───────────────────────────────────────────── */
 .error-message {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 0, 0, 0.1);
-    color: #b00000;
-    border: 1px solid #ff6b6b;
-    padding: 12px 25px;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    animation: fadeInDown 0.5s ease forwards;
-    opacity: 0;
-    z-index: 1000;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(180, 20, 20, 0.92);
+  color: var(--white);
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(255,100,100,0.3);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 9999;
+  white-space: nowrap;
+  animation: errorIn 0.4s ease both;
 }
 
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-}
-/* admin log in */
-
-.wrappers{
-    width: 100%;
-    max-width: 420px;
-    background-color: transparent;
-    color: green;
-    border-radius: 10px;
-    padding: 30px 40px;
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
-}
-.wrappers h1{
-    font-size: 36px;
-    text-align: center;
-}
-.wrappers a i{
-    color: darkgreen;
-    font-weight: bolder;
-    font-size: 50px;
-    transition: color ease 0.3s, font-size ease 0.3s;
-}
-.wrappers a i:hover{
-    color: #ABE7B2;
-    font-size: 48px;
-}
-.wrappers .input{
-    position: relative;
-    width: 100%;
-    height: 50px;
-    margin: 30px 0;
-}
-.input input{
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    border: 1px solid rgb(49, 255, 125);
-    border-radius: 40px;
-    font-size: 17px;
-    color: rgb(1, 75, 1);
-    padding: 20px 45px 20px 20px;
-}
-.input input::placeholder{
-    color: green;
-}
-.input i{
-    position: absolute;
-    right: 20px;
-    top: 70%;
-    transform: translateY(-10%);
-    font-size: 20px;
-}
-.wrappers .btn input{
-    margin-top: 40px;
-    width: 100%;
-    height: 45px;
-    background: white;
-    color: rgb(12, 123, 0);
-    font-weight: bolder;
-    border: none;
-    outline: none;
-    border-radius: 40px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-.wrappers .btn input:hover{
-    background-color: rgba(1, 246, 79, 0.459);
-    color: rgb(1, 73, 1);
-}
-.wrappers .a{
-    font-size: 14px;
-    text-align: center;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-.wrappers .a a{
-    position: relative;
-    text-decoration: none;
-    color: rgb(0, 57, 5);
-    font-weight: bold;
-    transition: color 0.3s ease;
-}
-.wrappers .a a::after{
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    width: 0%;
-    height: 2px;
-    background-color: rgb(0, 53, 0);
-    transition: width 0.3s ease;
-}
-.wrappers .a a:hover{
-    color: rgb(0, 108, 0);
-}
-.wrappers .a a:hover::after{
-    width: 100%;
+@keyframes errorIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-.error-message {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 0, 0, 0.1);
-    color: #b00000;
-    border: 1px solid #ff6b6b;
-    padding: 12px 25px;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    animation: fadeInDown 0.5s ease forwards;
-    opacity: 0;
-    z-index: 1000;
+/* ── Main / centering wrapper ────────────────────────────────── */
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
 }
 
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-}
-/* advisor log in */
-
-.wrap{
-    width: 100%;
-    max-width: 420px;
-    background-color: transparent;
-    color: red;
-    border-radius: 10px;
-    padding: 30px 40px;
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
-}
-.wrap h1{
-    font-size: 36px;
-    text-align: center;
-}
-.wrap a i{
-    color: darkred;
-    font-weight: bolder;
-    font-size: 50px;
-    transition: color ease 0.3s, font-size ease 0.3s;
-}
-.wrap a i:hover{
-    color: deeppink;
-    font-size: 48px;
-}
-.wrap .inputed{
-    position: relative;
-    width: 100%;
-    height: 50px;
-    margin: 30px 0;
-}
-.inputed input{
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    border: 1px solid rgb(184, 55, 55);
-    border-radius: 40px;
-    font-size: 17px;
-    color: #CD2C58;
-    padding: 20px 45px 20px 20px;
-}
-
-.inputed input::placeholder{
-    color: #CD2C58;
-}
-.inputed i{
-    position: absolute;
-    right: 20px;
-    top: 70%;
-    transform: translateY(-10%);
-    font-size: 20px;
-}
-.wrap .btn input{
-    margin-top: 40px;
-    width: 100%;
-    height: 45px;
-    background: white;
-    color: rgb(123, 0, 0);
-    font-weight: bolder;
-    border: none;
-    outline: none;
-    border-radius: 40px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-.wrap .btn input:hover{
-    background-color: rgba(255, 79, 79, 0.538);
-    color: #410000;
-}
-.wrap .a{
-    font-size: 14px;
-    text-align: center;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-.wrap .a a{
-    position: relative;
-    text-decoration: none;
-    color: #410000;
-    font-weight: bold;
-    transition: color 0.3s ease;
-}
-.wrap .a a::after{
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    width: 0%;
-    height: 2px;
-    background-color: rgb(76, 0, 0);
-    transition: width 0.3s ease;
-}
-.wrap .a a:hover{
-    color: #801313;
-}
-.wrap .a a:hover::after{
-    width: 100%;
-}
-.error-message {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 0, 0, 0.1);
-    color: #b00000;
-    border: 1px solid #ff6b6b;
-    padding: 12px 25px;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    animation: fadeInDown 0.5s ease forwards;
-    opacity: 0;
-    z-index: 1000;
-}
-
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-}
-
-/* coorinator log in  */
-
-.wraps{
-    width: 100%;
-    max-width: 420px;
-    background-color: transparent;
-    color: rgb(137 137 60);
-    border-radius: 10px;
-    padding: 30px 40px;
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.1);
-}
-.wraps h1{
-    font-size: 36px;
-    text-align: center;
-}
-.wraps a i{
-    color: rgb(95, 100, 0);
-    font-weight: bolder;
-    font-size: 50px;
-    transition: color ease 0.3s, font-size ease 0.3s;
-}
-.wraps a i:hover{
-    color: #dbe7ab;
-    font-size: 48px;
-}
-.wraps .input{
-    position: relative;
-    width: 100%;
-    height: 50px;
-    margin: 30px 0;
-}
-.wraps .input input{
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    border: 1px solid rgb(96, 94, 54);
-    border-radius: 40px;
-    font-size: 17px;
-    color: rgb(74, 75, 1);
-    padding: 20px 45px 20px 20px;
-}
-.wraps .input input::placeholder{
-    color: rgb(128, 90, 0);
-}
-.input i{
-    position: absolute;
-    right: 20px;
-    top: 70%;
-    transform: translateY(-10%);
-    font-size: 20px;
-}
-.wraps .btn input{
-    margin-top: 40px;
-    width: 100%;
-    height: 45px;
-    background: white;
-    color: rgb(123, 113, 0);
-    font-weight: bolder;
-    border: none;
-    outline: none;
-    border-radius: 40px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-.btn input:hover{
-    background-color: rgba(246, 230, 1, 0.459);
-    color: rgb(69, 73, 1);
-}
-.wraps .a{
-    font-size: 14px;
-    text-align: center;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-.wraps .a a{
-    position: relative;
-    text-decoration: none;
-    color: rgb(0, 57, 5);
-    font-weight: bold;
-    transition: color 0.3s ease;
-}
-.wraps .a a::after{
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    width: 0%;
-    height: 2px;
-    background-color: rgb(61, 70, 1);
-    transition: width 0.3s ease;
-}
-.wraps .a a:hover{
-    color: rgb(105, 108, 0);
-}
-.wraps .a a:hover::after{
-    width: 100%;
-}
-
-.error-message {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 0, 0, 0.1);
-    color: #b00000;
-    border: 1px solid #ff6b6b;
-    padding: 12px 25px;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    animation: fadeInDown 0.5s ease forwards;
-    opacity: 0;
-    z-index: 1000;
-}
-
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate(-50%, -15px);
-    }
-}
-
-/* MOBILE RESPONSIVE DESIGN */
-@media (max-width: 480px) {
-
-    .wrapper, .wrap,.wraps, .wrappers {
-        padding: 20px 25px;
-        max-width: 340px;
-        transform: scale(0.92);   /* shrinks the whole form a bit */
-    }
-
-    .wrapper, .wrappers h1 {
-        font-size: 28px;
-    }
-
-    .input-box {
-        margin: 20px 0;
-        height: 45px;
-    }
-
-    .input-box  input {
-        font-size: 14px;
-        padding: 15px 40px 15px 15px;
-        border-radius: 30px;
-    }
-    .wraps .input input {
-        font-size: 14px;
-        padding: 15px 40px 15px 15px;
-        border-radius: 30px;
-    }
-    .input-box label {
-        font-size: 14px;
-    }
-    .inputed input{
-        font-size: 14px;
-        padding: 15px 40px 15px 15px;
-        border-radius: 30px;
-    }
-    .input-box i {
-        margin-top: 12px;
-        font-size: 18px;
-        right: 15px;
-    }
-
-    .btn input {
-        height: 40px;
-        font-size: 15px;
-    }
-
-    .a p {
-        font-size: 12px;
-    }
-
-    footer.footer {
-        font-size: 0.75rem;
-        padding: 10px;
-        border-radius: 30px 30px 0 0;
-    }
-}
-
-
+/* ── Footer ─────────────────────────────────────────────────── */
 .footer {
-    background-color: #a00000;
-    color: #fff;
-    text-align: center;
-    padding: 15px;
-    border-radius: 40px 40px 0 0;
-    font-size: 0.9rem;
-    position: absolute;
-    bottom: 0;
-    width: 100%;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+  padding: 16px 24px;
+  margin-top: 32px;
+  background-color: var(--maroon);
+  background-image: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-lt) 100%);
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 
+.footer p {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.08em;
+}
+
+/* ── Responsive: Tablet / Split-screen ─────────────────────── */
+@media (max-width: 640px) {
+  body { padding: 24px 16px; }
+
+  .wrapper,
+  .wrap,
+  .wraps,
+  .wrappers {
+    padding: 36px 28px 32px;
+    border-radius: 16px;
+  }
+
+  .wrapper h1,
+  .wrap h1,
+  .wraps h1,
+  .wrappers h1 {
+    font-size: 1.65rem;
+    margin-bottom: 24px;
+  }
+
+  .input-box input[type="text"],
+  .input-box input[type="password"],
+  .input input[type="text"],
+  .input input[type="password"],
+  .inputed input[type="text"],
+  .inputed input[type="password"],
+  .input-box select {
+    font-size: 0.9rem !important;
+    padding: 13px 44px 13px 16px !important;
+  }
+
+  .btn input[type="submit"] {
+    padding: 14px;
+    font-size: 0.85rem;
+  }
+
+  .error-message {
+    font-size: 0.8rem;
+    padding: 10px 20px;
+    white-space: normal;
+    max-width: 90vw;
+    text-align: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .wrapper,
+  .wrap,
+  .wraps,
+  .wrappers {
+    padding: 28px 20px 24px;
+  }
+
+  .wrapper h1,
+  .wrap h1,
+  .wraps h1,
+  .wrappers h1 {
+    font-size: 1.4rem;
+  }
+}
+
+/* ── Accessibility: Reduced motion ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.1ms !important;
+  }
+}

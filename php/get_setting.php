@@ -1,7 +1,5 @@
 <?php
-/**
- * Helper functions to retrieve and use system settings
- */
+
 
 function getSetting($con, $settingKey, $defaultValue = null) {
     try {

@@ -4,29 +4,37 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export const LineGraph = ({ data }) => {
-  // Determine chart type based on data structure
   const isStudentView = !data.datasets && data.data;
-  const isAdvisorView = data.datasets && data.datasets.length > 0 && data.datasets[0]?.label !== "Approved" && data.datasets[0]?.label !== "Pending" && data.datasets[0]?.label !== "Rejected";
-  const isCoordinatorView = data.datasets && data.datasets.length > 0 && (
-    data.datasets.some(ds => ds.label === "Approved") ||
-    data.datasets.some(ds => ds.label === "Rejected")
-  );
+  const isCoordinatorView = data.datasets && data.datasets.length === 9 && 
+    data.datasets.some(ds => ds.label && (ds.label.includes('Approved Titles') || ds.label.includes('Proposal')));
+  const isAdvisorView = data.datasets && data.datasets.length > 0 && !isCoordinatorView &&
+    data.datasets[0]?.label && data.datasets[0].label !== "Approved" && data.datasets[0].label !== "Pending";
 
-  // Coordinator view now uses percentages
   const isPercentage = isStudentView || isAdvisorView || isCoordinatorView;
   
+  const getChartTitle = () => {
+    if (isStudentView) return "Research Progress Over Time";
+    if (isAdvisorView) return "Group Progress Comparison";
+    if (isCoordinatorView) return "Milestone Completion Over Time";
+    return "Submission Status Percentages Over Time";
+  };
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" },
+      legend: { 
+        position: "top",
+        labels: {
+          boxWidth: 15,
+          font: {
+            size: isCoordinatorView ? 10 : 12
+          }
+        }
+      },
       title: {
         display: true,
-        text: isStudentView 
-          ? "Research Progress Over Time" 
-          : isAdvisorView 
-            ? "Group Progress Comparison" 
-            : "Submission Status Percentages Over Time",
+        text: getChartTitle(),
       },
       tooltip: {
         callbacks: {
@@ -58,17 +66,14 @@ export const LineGraph = ({ data }) => {
     },
   };
 
-  // Handle both single dataset (student) and multiple datasets (advisor/coordinator)
   let chartData;
   
   if (data.datasets) {
-    // Advisor/Coordinator view: multiple lines
     chartData = {
       labels: data.labels,
       datasets: data.datasets
     };
   } else {
-    // Student view: single line
     chartData = {
       labels: data.labels,
       datasets: [

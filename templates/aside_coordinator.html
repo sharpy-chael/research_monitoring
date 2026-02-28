@@ -53,7 +53,7 @@
                     $priorityClass = 'priority-' . strtolower($notif['priority']);
                     $statusClass = $notif['status'] === 'sent' ? 'unread' : 'read';
                 ?>
-                    <div class="notification-card <?= $priorityClass ?> <?= $statusClass ?>">
+                    <div class="notification-card <?= $priorityClass ?> <?= $statusClass ?>" data-notif-id="<?= $notif['id'] ?>">
                         <div class="notification-header">
                             <span class="notification-title">
                                 <?php if ($notif['status'] === 'sent'): ?>
@@ -68,11 +68,16 @@
                         <div class="notification-body">
                             <?= nl2br(htmlspecialchars($notif['message'])) ?>
                         </div>
-                        <?php if ($notif['status'] === 'sent'): ?>
-                            <button class="mark-read-btn" onclick="markAsReadCoordinator(<?= $notif['id'] ?>)">
-                                <i class="ri-check-line"></i> Mark as Read
+                        <div class="notification-actions">
+                            <?php if ($notif['status'] === 'sent'): ?>
+                                <button class="mark-read-btn" onclick="markAsReadCoordinator(<?= $notif['id'] ?>)">
+                                    <i class="ri-check-line"></i> Mark as Read
+                                </button>
+                            <?php endif; ?>
+                            <button class="delete-notif-btn" onclick="deleteNotificationCoordinator(<?= $notif['id'] ?>)">
+                                <i class="ri-delete-bin-line"></i> Delete
                             </button>
-                        <?php endif; ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -85,7 +90,7 @@
     </div>
 </div>
 
-
+<div class="toast-container" id="toastContainer"></div>
 
 <style>
 .notifications-link {
@@ -209,11 +214,17 @@
 .notification-body {
     color: #555;
     line-height: 1.5;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .mark-read-btn {
-    background: #007bff;
+    background: #155724;
     color: white;
     border: none;
     padding: 6px 12px;
@@ -227,7 +238,25 @@
 }
 
 .mark-read-btn:hover {
-    background: #0056b3;
+    background: #0d3e1a;
+}
+
+.delete-notif-btn {
+    background: #721c24;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.3s;
+}
+
+.delete-notif-btn:hover {
+    background: #5a1a1f;
 }
 
 .priority-high {
@@ -258,6 +287,71 @@
     font-size: 16px;
 }
 
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease-out;
+    min-width: 280px;
+}
+
+.toast.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.toast.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.toast i {
+    font-size: 18px;
+}
+
+.toast.removing {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
 @media (max-width: 768px) {
     .notifications-modal-content {
         width: 95%;
@@ -272,6 +366,16 @@
     
     .notification-date {
         font-size: 11px;
+    }
+
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .toast {
+        min-width: auto;
     }
 }
 </style>
@@ -322,13 +426,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line';
+    toast.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 async function markAsReadCoordinator(notificationId) {
     try {
         const formData = new FormData();
         formData.append('action', 'mark_read');
         formData.append('notification_id', notificationId);
         
-        const response = await fetch('mark_notification_read.php', {
+        const response = await fetch('php/mark_notification_read.php', {
             method: 'POST',
             body: formData
         });
@@ -336,32 +456,99 @@ async function markAsReadCoordinator(notificationId) {
         const data = await response.json();
         
         if (data.success) {
-            const notifCard = event.target.closest('.notification-card');
-            notifCard.classList.remove('unread');
-            notifCard.classList.add('read');
-            event.target.remove();
+            const notifCard = document.querySelector(`.notification-card[data-notif-id="${notificationId}"]`);
+            if (notifCard) {
+                notifCard.classList.remove('unread');
+                notifCard.classList.add('read');
+                
+                const newBadge = notifCard.querySelector('.new-badge');
+                if (newBadge) newBadge.remove();
+                
+                const markReadBtn = notifCard.querySelector('.mark-read-btn');
+                if (markReadBtn) markReadBtn.remove();
+            }
             
-            const badge = document.querySelector('.notification-badge-sidebar');
-            const badgeMobile = document.querySelector('.notification-badge-mobile');
-            if (badge) {
-                let count = parseInt(badge.textContent) - 1;
-                if (count <= 0) {
-                    badge.remove();
-                } else {
-                    badge.textContent = count;
-                }
-            }
-            if (badgeMobile) {
-                let count = parseInt(badgeMobile.textContent) - 1;
-                if (count <= 0) {
-                    badgeMobile.remove();
-                } else {
-                    badgeMobile.textContent = count;
-                }
-            }
+            updateBadgeCount(-1);
+            showToast('Marked as read', 'success');
+        } else {
+            showToast(data.message || 'Failed to mark as read', 'error');
         }
     } catch (error) {
-        console.error('Error marking notification as read:', error);
+        showToast('Network error occurred', 'error');
+    }
+}
+
+async function deleteNotificationCoordinator(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('notification_id', notificationId);
+        
+        const response = await fetch('php/mark_notification_read.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const notifCard = document.querySelector(`.notification-card[data-notif-id="${notificationId}"]`);
+            if (notifCard) {
+                const wasUnread = notifCard.classList.contains('unread');
+                
+                notifCard.style.opacity = '0';
+                notifCard.style.transform = 'translateX(400px)';
+                notifCard.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    notifCard.remove();
+                    
+                    const remainingCards = document.querySelectorAll('.notification-card');
+                    if (remainingCards.length === 0) {
+                        const modalBody = document.querySelector('.notifications-modal-body');
+                        modalBody.innerHTML = `
+                            <div class="no-notifications-modal">
+                                <i class="ri-notification-off-line"></i>
+                                <p>No notifications yet</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+                
+                if (wasUnread) {
+                    updateBadgeCount(-1);
+                }
+            }
+            
+            showToast('Notification deleted', 'success');
+        } else {
+            showToast(data.message || 'Failed to delete notification', 'error');
+        }
+    } catch (error) {
+        showToast('Network error occurred', 'error');
+    }
+}
+
+function updateBadgeCount(change) {
+    const badge = document.querySelector('.notification-badge-sidebar');
+    const badgeMobile = document.querySelector('.notification-badge-mobile');
+    
+    if (badge) {
+        let count = parseInt(badge.textContent) + change;
+        if (count <= 0) {
+            badge.remove();
+        } else {
+            badge.textContent = count;
+        }
+    }
+    
+    if (badgeMobile) {
+        let count = parseInt(badgeMobile.textContent) + change;
+        if (count <= 0) {
+            badgeMobile.remove();
+        } else {
+            badgeMobile.textContent = count;
+        }
     }
 }
 </script>
