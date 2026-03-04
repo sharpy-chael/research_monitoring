@@ -565,7 +565,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                                 <div class="group-name">
                                     <?= htmlspecialchars($grp['group_name']) ?>
                                     <i class="ri-more-2-fill group-menu" onclick="toggleMembers(this)"></i>
-                                    <i class="ri-delete-bin-line group-delete" onclick="deleteGroup(<?= $grp['group_id'] ?>, this)" title="Delete group"></i>
                                 </div>
 
                                 <div class="members-list" style="display:none;">
@@ -657,8 +656,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 <script>
     const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
 </script>
-    
-</script>
 <script src="js/session_monitor.js"></script>
 <script>
 function showToast(message, type = 'success') {
@@ -732,32 +729,22 @@ let confirmCallback = null;
 
 function showConfirmModal(message, onConfirm) {
     const modal = document.getElementById('confirmModal');
-    const messageEl = document.getElementById('confirmMessage');
-    
-    messageEl.textContent = message;
+    document.getElementById('confirmMessage').textContent = message;
     confirmCallback = onConfirm;
     modal.classList.add('active');
 }
 
 function closeConfirmModal() {
-    const modal = document.getElementById('confirmModal');
-    modal.classList.remove('active');
+    document.getElementById('confirmModal').classList.remove('active');
     confirmCallback = null;
 }
 
 document.getElementById('confirmModal').addEventListener('click', (e) => {
-    if (e.target.id === 'confirmModal') {
-        closeConfirmModal();
-    }
+    if (e.target.id === 'confirmModal') closeConfirmModal();
 });
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const modal = document.getElementById('confirmModal');
-        if (modal.classList.contains('active')) {
-            closeConfirmModal();
-        }
-    }
+    if (e.key === 'Escape' && document.getElementById('confirmModal').classList.contains('active')) closeConfirmModal();
 });
 
 document.getElementById('confirmBtn').addEventListener('click', async () => {
@@ -767,31 +754,6 @@ document.getElementById('confirmBtn').addEventListener('click', async () => {
         await callback();
     }
 });
-
-async function deleteGroup(id, elem) {
-    showConfirmModal(
-        'Delete this group? This will remove all students from this group.',
-        async () => {
-            try {
-                const res = await fetch('php/add_student.php', {
-                    method: 'POST',
-                    body: JSON.stringify({ delete_group_id: id }),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    elem.closest('.group-item').remove();
-                    applyFilters();
-                    showToast('Group deleted successfully!', 'success');
-                } else {
-                    showToast(data.message || 'Failed to delete group.', 'error');
-                }
-            } catch (e) {
-                showToast('Network error. Please try again.', 'error');
-            }
-        }
-    );
-}
 
 function toggleMembers(icon) {
     const groupItem   = icon.closest('.group-item');
@@ -818,9 +780,7 @@ async function addItem(type) {
             const list = document.getElementById(listId);
             const empty = list.querySelector('.empty-state');
             if (empty) empty.remove();
-            
             const currentCount = list.querySelectorAll('.item-row').length;
-            
             const row = document.createElement('div');
             row.className = 'item-row';
             row.dataset.id = data.id;
@@ -846,7 +806,6 @@ async function addItem(type) {
 async function deleteItem(type, id, iconEl) {
     const row = iconEl.closest('.item-row');
     const name = row.querySelector('.item-name').textContent;
-    
     showConfirmModal(
         `Delete "${name}"? This will remove it from all groups.`,
         async () => {
@@ -863,7 +822,6 @@ async function deleteItem(type, id, iconEl) {
                     updateTabBadge();
                     updateCounts(type);
                     renumberItems(type);
-                    
                     const listId = type === 'sdg' ? 'sdgList' : 'thrustList';
                     const list = document.getElementById(listId);
                     if (!list.querySelector('.item-row')) {
@@ -886,12 +844,9 @@ async function deleteItem(type, id, iconEl) {
 function renumberItems(type) {
     const listId = type === 'sdg' ? 'sdgList' : 'thrustList';
     const list = document.getElementById(listId);
-    const rows = list.querySelectorAll('.item-row');
-    rows.forEach((row, index) => {
+    list.querySelectorAll('.item-row').forEach((row, index) => {
         const numberSpan = row.querySelector('.item-number');
-        if (numberSpan) {
-            numberSpan.textContent = String(index + 1).padStart(2, '0');
-        }
+        if (numberSpan) numberSpan.textContent = String(index + 1).padStart(2, '0');
     });
 }
 
@@ -899,13 +854,11 @@ function updateCounts(type) {
     const listId = type === 'sdg' ? 'sdgList' : 'thrustList';
     const list = document.getElementById(listId);
     const count = list.querySelectorAll('.item-row').length;
-    
     const section = list.closest('.manage-section');
     const countText = section.querySelector('.manage-section-title p');
     if (countText) {
         const label = type === 'sdg' ? 'SDG' : 'Thrust';
-        const plural = count !== 1 ? 's' : '';
-        countText.textContent = `${count} ${label}${plural} · Managed by Advisors`;
+        countText.textContent = `${count} ${label}${count !== 1 ? 's' : ''} · Managed by Advisors`;
     }
 }
 
@@ -915,8 +868,6 @@ function updateTabBadge() {
     const badge = document.querySelector('[data-tab="sdg-thrusts"] .tab-badge');
     if (badge) badge.textContent = sdgCount + thrustCount;
 }
-
-
 </script>
 
 </body>

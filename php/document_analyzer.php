@@ -84,7 +84,7 @@ class DocumentAnalyzer {
         $this->con = $con;
         $this->filePath = $filePath;
         $this->taskName = $taskName;
-        $this->text = $this->extractText();
+        // $this->text = $this->extractText();
         $this->cleanText = $this->cleanTextForAnalysis($this->text);
         $this->sentences = $this->splitIntoSentences($this->text);
         $this->paragraphs = $this->splitIntoParagraphs($this->text);
@@ -93,14 +93,14 @@ class DocumentAnalyzer {
     /**
      * Extract text using enhanced extractor
      */
-    private function extractText() {
-        try {
-            return AdvancedExtractor::extract($this->filePath);
-        } catch (Exception $e) {
-            error_log("Extraction error: " . $e->getMessage());
-            return "Error extracting text: " . $e->getMessage();
-        }
-    }
+    // private function extractText() {
+    //     try {
+    //         return AdvancedExtractor::extract($this->filePath);
+    //     } catch (Exception $e) {
+    //         error_log("Extraction error: " . $e->getMessage());
+    //         return "Error extracting text: " . $e->getMessage();
+    //     }
+    // }
     
     /**
      * Clean text for better analysis

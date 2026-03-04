@@ -49,7 +49,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -63,9 +62,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     <?php if (isset($_SESSION['error_message'])): ?>
         <div class="error-message"><?php echo $_SESSION['error_message']; ?></div>
         <?php unset($_SESSION['error_message']); ?>
-    <?php endif; ?> 
+    <?php endif; ?>
     <?php if (isset($_SESSION['success_message'])): ?>
-        <div class="success-message"><?php echo $_SESSION['success_message'];?></div>
+        <div class="success-message"><?php echo $_SESSION['success_message']; ?></div>
         <?php unset($_SESSION['success_message']); ?>
     <?php endif; ?>
     <div class="containers">
@@ -100,6 +99,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     <footer class="footer">
         <p>© 2025 Research Monitoring System</p>
     </footer>
-    <script src="js/timeout.js"></script> 
+    <script src="js/timeout.js"></script>
 </body>
 </html>

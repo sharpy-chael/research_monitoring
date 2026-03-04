@@ -159,6 +159,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'poll_status') {
+    header('Content-Type: application/json');
+    $sessionUserId = $_SESSION['id'];
+    $aStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
+    $aStmt->execute(['id' => $sessionUserId]);
+    $aData = $aStmt->fetch(PDO::FETCH_ASSOC);
+    $aId = $aData['advisor_id'] ?? $sessionUserId;
+    $gStmt = $con->prepare("SELECT g.id, g.title_status, gm.proposal_status, gm.final_defense_status, gm.applied_copyright_status, gm.research_presented_status, gm.research_published_status, gm.copyright_approved_status FROM groups g LEFT JOIN group_milestones gm ON g.id = gm.group_id WHERE g.advisor_id = :aid");
+    $gStmt->execute(['aid' => $aId]);
+    $rows = $gStmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = [];
+    foreach ($rows as $r) {
+        $uStmt = $con->prepare("SELECT document_type, status FROM urec_documents WHERE group_id = :gid ORDER BY uploaded_at DESC");
+        $uStmt->execute(['gid' => $r['id']]);
+        $uDocs = $uStmt->fetchAll(PDO::FETCH_ASSOC);
+        $uMap = [];
+        foreach ($uDocs as $ud) if (!isset($uMap[$ud['document_type']])) $uMap[$ud['document_type']] = $ud['status'];
+        $result[$r['id']] = [
+            'title_status' => $r['title_status'] ?? 'missing',
+            'proposal_status' => $r['proposal_status'] ?? 'missing',
+            'final_defense_status' => $r['final_defense_status'] ?? 'missing',
+            'applied_copyright_status' => $r['applied_copyright_status'] ?? 'missing',
+            'research_presented_status' => $r['research_presented_status'] ?? 'missing',
+            'research_published_status' => $r['research_published_status'] ?? 'missing',
+            'copyright_approved_status' => $r['copyright_approved_status'] ?? 'missing',
+            'urec_form_status' => $uMap['UREC Form'] ?? 'missing',
+            'urec_clearance_status' => $uMap['UREC Clearance'] ?? 'missing',
+        ];
+    }
+    echo json_encode($result);
+    exit;
+}
+
 if (getSettingBool($con, 'maintenance_mode', false)) {
     if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'coordinator') {
 ?>
@@ -960,6 +993,48 @@ foreach ($assignedGroups as $g) {
                 showToast('Network error. Please try again.', 'error');
             }
         }
+
+        (function() {
+            const snapshot = {};
+            <?php foreach ($groups as $grp):
+                $ms = $grp['milestone_statuses'];
+                $urecFormSnap = 'missing';
+                $urecClearanceSnap = 'missing';
+                foreach ($grp['urec_docs'] as $ud) {
+                    if ($ud['document_type'] === 'UREC Form') $urecFormSnap = $ud['status'];
+                    if ($ud['document_type'] === 'UREC Clearance') $urecClearanceSnap = $ud['status'];
+                }
+            ?>
+            snapshot[<?= $grp['group_id'] ?>] = {
+                title_status: '<?= $grp['title_status'] ?>',
+                proposal_status: '<?= $ms['proposal_status'] ?? 'missing' ?>',
+                final_defense_status: '<?= $ms['final_defense_status'] ?? 'missing' ?>',
+                applied_copyright_status: '<?= $ms['applied_copyright_status'] ?? 'missing' ?>',
+                research_presented_status: '<?= $ms['research_presented_status'] ?? 'missing' ?>',
+                research_published_status: '<?= $ms['research_published_status'] ?? 'missing' ?>',
+                copyright_approved_status: '<?= $ms['copyright_approved_status'] ?? 'missing' ?>',
+                urec_form_status: '<?= $urecFormSnap ?>',
+                urec_clearance_status: '<?= $urecClearanceSnap ?>',
+            };
+            <?php endforeach; ?>
+            setInterval(async () => {
+                try {
+                    const fd = new FormData();
+                    fd.append('action', 'poll_status');
+                    const data = await (await fetch('advisees.php', { method: 'POST', body: fd })).json();
+                    for (const gid of Object.keys(snapshot)) {
+                        const curr = data[gid];
+                        if (!curr) continue;
+                        for (const key of Object.keys(snapshot[gid])) {
+                            if (curr[key] !== undefined && curr[key] !== snapshot[gid][key]) {
+                                location.reload();
+                                return;
+                            }
+                        }
+                    }
+                } catch {}
+            }, 10000);
+        })();
 
         const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
     </script>

@@ -1,38 +1,93 @@
 /* ============================================================
-   Research Monitoring System — Login Pages Stylesheet
-   Covers: login.php (blue) | logged.php (yellow) |
+   Research Monitoring System — Login Pages Stylesheet (Light)
+   Covers: login.php (blue) | logged.php (amber/yellow) |
            log_in.php (green) | loginn.php (red)
-   Shared footer: maroon
+   Footer: maroon on all pages
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600&display=swap');
 
-/* ── CSS Variables — Shared ─────────────────────────────────── */
+/* ── Shared Variables ───────────────────────────────────────── */
 :root {
+  --white:         #ffffff;
+  --off-white:     #f5f2ee;
   --maroon:        #7b1a1a;
   --maroon-lt:     #a02020;
-  --white:         #ffffff;
-  --cream:         #f5f1ec;
-  --glass:         rgba(255, 255, 255, 0.08);
-  --glass-border:  rgba(255, 255, 255, 0.15);
-  --shadow:        0 24px 64px rgba(0, 0, 0, 0.4);
-  --shadow-sm:     0 4px 20px rgba(0, 0, 0, 0.2);
-  --radius:        20px;
+  --text-main:     #1a1a2e;
+  --text-muted:    #8a8a9a;
+  --shadow-sm:     0 2px 16px rgba(26, 26, 46, 0.08);
+  --shadow-md:     0 12px 48px rgba(26, 26, 46, 0.13);
+  --shadow-lg:     0 24px 72px rgba(26, 26, 46, 0.18);
+  --radius:        22px;
   --transition:    0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Default (blue — login.php) */
-  --accent:        #1a6fbf;
-  --accent-lt:     #3a9be8;
-  --accent-dk:     #0d3d73;
-  --bg-a:          #061d3a;
-  --bg-b:          #0a2d56;
-  --glow:          rgba(26, 111, 191, 0.35);
-  --label:         rgba(200, 225, 255, 0.7);
-  --input-border:  rgba(58, 155, 232, 0.4);
-  --input-focus:   rgba(58, 155, 232, 0.8);
-  --btn-from:      #1a6fbf;
-  --btn-to:        #3a9be8;
-  --heading-color: #90c8f0;
+  /* Default role: Blue (login.php / Student) */
+  --accent:        #1565c0;
+  --accent-lt:     #1e88e5;
+  --accent-dk:     #0d3a7a;
+  --accent-pale:   #e3f0fd;
+  --bg-tint:       #edf4fc;
+  --label-color:   #1565c0;
+  --input-border:  #b3cef0;
+  --input-focus:   #1e88e5;
+  --glow:          rgba(21, 101, 192, 0.15);
+  --btn-from:      #1565c0;
+  --btn-to:        #42a5f5;
+  --heading-color: #0d3a7a;
+  --link-color:    #1e88e5;
+}
+
+/* ── Role Overrides ─────────────────────────────────────────── */
+
+/* logged.php — AMBER/YELLOW (Coordinator) */
+.wraps {
+  --accent:        #c17900;
+  --accent-lt:     #f59e0b;
+  --accent-dk:     #7c4f00;
+  --accent-pale:   #fef3c7;
+  --bg-tint:       #fdf6e3;
+  --label-color:   #92570a;
+  --input-border:  #f5c76a;
+  --input-focus:   #f59e0b;
+  --glow:          rgba(193, 121, 0, 0.14);
+  --btn-from:      #c17900;
+  --btn-to:        #f59e0b;
+  --heading-color: #7c4f00;
+  --link-color:    #c17900;
+}
+
+/* log_in.php — GREEN (Admin) */
+.wrappers {
+  --accent:        #1b5e20;
+  --accent-lt:     #2e7d32;
+  --accent-dk:     #0a3d0e;
+  --accent-pale:   #e8f5e9;
+  --bg-tint:       #edf7ee;
+  --label-color:   #1b5e20;
+  --input-border:  #a5d6a7;
+  --input-focus:   #43a047;
+  --glow:          rgba(27, 94, 32, 0.13);
+  --btn-from:      #1b5e20;
+  --btn-to:        #43a047;
+  --heading-color: #0a3d0e;
+  --link-color:    #2e7d32;
+}
+
+/* loginn.php — RED (Adviser) */
+.wrap {
+  --accent:        #b71c1c;
+  --accent-lt:     #e53935;
+  --accent-dk:     #7f0000;
+  --accent-pale:   #fce4e4;
+  --bg-tint:       #fdf0f0;
+  --label-color:   #b71c1c;
+  --input-border:  #ef9a9a;
+  --input-focus:   #e53935;
+  --glow:          rgba(183, 28, 28, 0.13);
+  --btn-from:      #b71c1c;
+  --btn-to:        #e53935;
+  --heading-color: #7f0000;
+  --link-color:    #b71c1c;
 }
 
 /* ── Reset & Base ───────────────────────────────────────────── */
@@ -45,185 +100,112 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Outfit', sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
-  background: linear-gradient(135deg, var(--bg-a) 0%, var(--bg-b) 100%);
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background-color: var(--off-white);
+  background-image:
+    radial-gradient(ellipse 65% 55% at 10% 5%, rgba(26,26,46,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 65% at 92% 95%, rgba(26,26,46,0.04) 0%, transparent 55%);
   position: relative;
+  overflow-x: hidden;
 }
 
-/* ── Animated Background Orbs ───────────────────────────────── */
-body::before,
+/* Soft dot pattern */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(26,26,46,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Tinted background blob per role (using wrapper bg-tint) */
 body::after {
   content: '';
   position: fixed;
+  width: 700px;
+  height: 700px;
   border-radius: 50%;
-  pointer-events: none;
+  background: var(--bg-tint);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  filter: blur(60px);
 }
 
-body::before {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
-  top: -120px;
-  left: -120px;
-  animation: driftA 14s ease-in-out infinite alternate;
-}
-
-body::after {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
-  bottom: -100px;
-  right: -100px;
-  animation: driftB 18s ease-in-out infinite alternate;
-}
-
-@keyframes driftA {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(60px, 80px) scale(1.15); }
-}
-
-@keyframes driftB {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(-50px, -60px) scale(1.1); }
-}
-
-/* Subtle dot grid */
-body > *:first-child::before {
-  display: none; /* avoid double pseudo on wrapper */
-}
-
-/* ============================================================
-   PER-ROLE THEME OVERRIDES
-   Applied via body class or wrapper class
-   ============================================================ */
-
-/* ── login.php — BLUE (default, no override needed) ─────────── */
-
-/* ── logged.php — YELLOW (Coordinator) ──────────────────────── */
-.wraps,
-body:has(.wraps) {
-  --accent:       #c9860a;
-  --accent-lt:    #f0b429;
-  --accent-dk:    #7a4e00;
-  --bg-a:         #1e1200;
-  --bg-b:         #2e1e00;
-  --glow:         rgba(201, 134, 10, 0.3);
-  --label:        rgba(255, 220, 140, 0.75);
-  --input-border: rgba(240, 180, 41, 0.4);
-  --input-focus:  rgba(240, 180, 41, 0.85);
-  --btn-from:     #c9860a;
-  --btn-to:       #f0b429;
-  --heading-color:#f5c842;
-}
-
-/* ── log_in.php — GREEN (Admin) ──────────────────────────────── */
-.wrappers,
-body:has(.wrappers) {
-  --accent:       #0e7a3a;
-  --accent-lt:    #22b85a;
-  --accent-dk:    #064020;
-  --bg-a:         #011a0a;
-  --bg-b:         #022b12;
-  --glow:         rgba(14, 122, 58, 0.3);
-  --label:        rgba(140, 230, 170, 0.75);
-  --input-border: rgba(34, 184, 90, 0.4);
-  --input-focus:  rgba(34, 184, 90, 0.85);
-  --btn-from:     #0e7a3a;
-  --btn-to:       #22b85a;
-  --heading-color:#6ee89a;
-}
-
-/* ── loginn.php — RED (Adviser) ──────────────────────────────── */
-.wrap,
-body:has(.wrap) {
-  --accent:       #b51a1a;
-  --accent-lt:    #e03a3a;
-  --accent-dk:    #6a0808;
-  --bg-a:         #1a0000;
-  --bg-b:         #2b0404;
-  --glow:         rgba(181, 26, 26, 0.3);
-  --label:        rgba(255, 170, 170, 0.75);
-  --input-border: rgba(224, 58, 58, 0.4);
-  --input-focus:  rgba(224, 58, 58, 0.85);
-  --btn-from:     #b51a1a;
-  --btn-to:       #e03a3a;
-  --heading-color:#f08080;
-}
-
-/* ── Also set body background per role ───────────────────────── */
-body:has(.wraps)   { background: linear-gradient(135deg, #1e1200 0%, #2e1e00 100%); }
-body:has(.wrappers){ background: linear-gradient(135deg, #011a0a 0%, #022b12 100%); }
-body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100%); }
-
-/* ============================================================
-   SHARED WRAPPER / CARD STYLES
-   All four wrappers: .wrapper .wrap .wraps .wrappers
-   ============================================================ */
+/* ── Login Card ─────────────────────────────────────────────── */
 .wrapper,
 .wrap,
 .wraps,
 .wrappers {
   position: relative;
   z-index: 1;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
+  background: var(--white);
+  border: 1px solid rgba(26, 26, 46, 0.08);
   border-radius: var(--radius);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 48px 44px 40px;
+  padding: 48px 44px 42px;
   width: 100%;
   max-width: 460px;
-  margin: auto;
-  box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,0.04);
-
-  /* Entrance animation */
-  animation: cardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: var(--shadow-md);
+  animation: cardIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow: hidden;
 }
 
 @keyframes cardIn {
-  from {
-    opacity: 0;
-    transform: translateY(40px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(36px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Top shimmer line */
+/* Top accent stripe */
 .wrapper::before,
 .wrap::before,
 .wraps::before,
 .wrappers::before {
   content: '';
   position: absolute;
-  top: 0; left: 10%; right: 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-lt), transparent);
-  border-radius: 1px;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-lt));
 }
 
-/* Left accent bar */
+/* Decorative pale tinted corner shape */
 .wrapper::after,
 .wrap::after,
 .wraps::after,
 .wrappers::after {
   content: '';
   position: absolute;
-  top: 20%; bottom: 20%;
-  left: 0;
-  width: 3px;
-  background: linear-gradient(180deg, transparent, var(--accent), transparent);
-  border-radius: 0 3px 3px 0;
+  bottom: -60px;
+  right: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: var(--accent-pale);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* ── Back arrow link ─────────────────────────────────────────── */
+/* Ensure all card content sits above decorative elements */
+.wrapper > *,
+.wrap > *,
+.wraps > *,
+.wrappers > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Back arrow ─────────────────────────────────────────────── */
 .wrapper > a,
 .wrap > a,
 .wraps > a,
@@ -234,13 +216,14 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  border: 1px solid var(--input-border);
-  color: var(--accent-lt);
-  font-size: 1.3rem;
+  border: 1.5px solid var(--input-border);
+  background: var(--accent-pale);
+  color: var(--accent);
+  font-size: 1.2rem;
   text-decoration: none;
-  margin-bottom: 24px;
-  transition: background var(--transition), border-color var(--transition), transform var(--transition);
-  background: rgba(255,255,255,0.04);
+  margin-bottom: 28px;
+  transition: background var(--transition), border-color var(--transition),
+              color var(--transition), transform var(--transition);
 }
 
 .wrapper > a:hover,
@@ -258,15 +241,16 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
 .wrap h1,
 .wraps h1,
 .wrappers h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 2rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.2rem;
   font-weight: 700;
   color: var(--heading-color);
   margin-bottom: 32px;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  animation: fadeUp 0.6s 0.15s ease both;
   position: relative;
-  padding-bottom: 14px;
-  animation: fadeUp 0.6s 0.2s ease both;
+  padding-bottom: 16px;
 }
 
 .wrapper h1::after,
@@ -276,49 +260,41 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
   content: '';
   position: absolute;
   bottom: 0; left: 0;
-  width: 48px;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), transparent);
-  border-radius: 2px;
+  width: 44px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-lt));
+  border-radius: 3px;
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ============================================================
-   INPUT GROUPS
-   Student uses .input-box | Admin/Coord/Adviser use .input/.inputed
-   ============================================================ */
+/* ── Input Groups ───────────────────────────────────────────── */
 .input-box,
 .input,
 .inputed {
   position: relative;
-  margin-bottom: 22px;
-  animation: fadeUp 0.6s ease both;
+  margin-bottom: 20px;
+  animation: fadeUp 0.5s ease both;
 }
 
-.input-box:nth-child(2) { animation-delay: 0.25s; }
-.input-box:nth-child(3) { animation-delay: 0.35s; }
-.input-box:nth-child(4) { animation-delay: 0.45s; }
-.input:nth-child(2)     { animation-delay: 0.25s; }
-.input:nth-child(3)     { animation-delay: 0.35s; }
-.inputed:nth-child(2)   { animation-delay: 0.25s; }
-.inputed:nth-child(3)   { animation-delay: 0.35s; }
+.input-box:nth-child(2), .input:nth-child(2), .inputed:nth-child(2) { animation-delay: 0.2s; }
+.input-box:nth-child(3), .input:nth-child(3), .inputed:nth-child(3) { animation-delay: 0.3s; }
+.input-box:nth-child(4)                                              { animation-delay: 0.4s; }
 
 /* Labels */
 .input-box label,
 .input label,
 .inputed label {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--label);
+  color: var(--label-color);
   margin-bottom: 8px;
-  transition: color var(--transition);
 }
 
 /* Text / Password inputs */
@@ -329,15 +305,16 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
 .inputed input[type="text"],
 .inputed input[type="password"] {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--input-border);
+  background: var(--off-white);
+  border: 1.5px solid var(--input-border);
   border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 0.95rem;
-  color: var(--white);
-  padding: 14px 48px 14px 18px;
+  color: var(--text-main);
+  padding: 13px 46px 13px 16px;
   outline: none;
-  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  transition: border-color var(--transition), background var(--transition),
+              box-shadow var(--transition);
 }
 
 .input-box input[type="text"]::placeholder,
@@ -346,7 +323,7 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
 .input input[type="password"]::placeholder,
 .inputed input[type="text"]::placeholder,
 .inputed input[type="password"]::placeholder {
-  color: rgba(255,255,255,0.25);
+  color: var(--text-muted);
   font-weight: 300;
   font-style: italic;
 }
@@ -358,68 +335,58 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
 .inputed input[type="text"]:focus,
 .inputed input[type="password"]:focus {
   border-color: var(--input-focus);
-  background: rgba(255,255,255,0.08);
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.06),
-              0 0 16px var(--glow);
+  background: var(--white);
+  box-shadow: 0 0 0 4px var(--glow);
 }
 
 /* ── SELECT (Student program dropdown) ───────────────────────── */
 .input-box select {
   width: 100%;
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid var(--input-border) !important;
+  background: var(--off-white) !important;
+  border: 1.5px solid var(--input-border) !important;
   border-radius: 12px !important;
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: 'Outfit', sans-serif !important;
   font-size: 0.95rem !important;
-  color: var(--white) !important;
-  padding: 14px 48px 14px 18px !important;
+  color: var(--text-main) !important;
+  padding: 13px 46px 13px 16px !important;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
   transition: border-color var(--transition), box-shadow var(--transition);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8a9a' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
-  background-position: right 16px center !important;
-  background-size: 18px !important;
+  background-position: right 14px center !important;
+  background-size: 16px !important;
 }
 
 .input-box select:focus {
   border-color: var(--input-focus) !important;
-  background-color: rgba(255,255,255,0.08) !important;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.06),
-              0 0 16px var(--glow);
+  background-color: var(--white) !important;
+  box-shadow: 0 0 0 4px var(--glow);
 }
 
 .input-box select option {
-  background-color: #0d1b3e;
-  color: var(--white);
-  padding: 10px;
+  background-color: var(--white);
+  color: var(--text-main);
 }
 
 .input-box select option:disabled {
-  color: rgba(255,255,255,0.35);
+  color: var(--text-muted);
 }
 
-/* ── Input icons (boxicons) ──────────────────────────────────── */
-/* Icons are anchored to the bottom of the input field (not the wrapper)
-   Input height = padding-top(14) + line-height(~1.4*0.95rem≈21px) + padding-bottom(14) ≈ 49px
-   Icon sits centered in that 49px zone from the bottom of the wrapper */
+/* ── Input Icons ─────────────────────────────────────────────── */
 .input-box i,
 .input i,
 .inputed i {
   position: absolute;
-  right: 16px;
-  /* Anchor from bottom: 14px bottom-padding + half icon(~9px) = ~23px up from bottom of the input.
-     The input is the last/bottom element in the group so bottom offset works perfectly. */
-  bottom: 14px;
-  transform: none;
-  color: var(--accent-lt);
-  font-size: 1.1rem;
-  opacity: 0.55;
+  right: 14px;
+  bottom: 13px;
+  color: var(--accent);
+  font-size: 1.05rem;
+  opacity: 0.45;
   pointer-events: none;
   transition: opacity var(--transition), color var(--transition);
-  /* vertically center within input's own padding zone */
   display: flex;
   align-items: center;
   line-height: 1;
@@ -429,15 +396,14 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
 .input input:focus ~ i,
 .inputed input:focus ~ i,
 .input-box select:focus ~ i {
-  opacity: 1;
-  color: var(--accent-lt);
+  opacity: 0.9;
 }
 
 /* ── Submit Button ───────────────────────────────────────────── */
 .btn {
-  margin-top: 8px;
+  margin-top: 10px;
   margin-bottom: 20px;
-  animation: fadeUp 0.6s 0.5s ease both;
+  animation: fadeUp 0.5s 0.45s ease both;
 }
 
 .btn input[type="submit"] {
@@ -445,94 +411,114 @@ body:has(.wrap)    { background: linear-gradient(135deg, #1a0000 0%, #2b0404 100
   padding: 15px;
   border: none;
   border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.9rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--white);
   background: linear-gradient(135deg, var(--btn-from) 0%, var(--btn-to) 100%);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
   transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
-  box-shadow: 0 4px 20px var(--glow);
+  box-shadow: 0 4px 16px var(--glow);
 }
 
+/* Shimmer on hover */
 .btn input[type="submit"]::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-  opacity: 0;
-  transition: opacity var(--transition);
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+  z-index: -1;
 }
 
 .btn input[type="submit"]:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px var(--glow);
-  filter: brightness(1.08);
+  box-shadow: 0 8px 28px var(--glow);
+  filter: brightness(1.06);
 }
 
-.btn input[type="submit"]:hover::before { opacity: 1; }
-.btn input[type="submit"]:active { transform: translateY(0) scale(0.98); }
+.btn input[type="submit"]:hover::before {
+  transform: translateX(100%);
+}
 
-/* ── Bottom link ─────────────────────────────────────────────── */
+.btn input[type="submit"]:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Yellow/gold submit — dark text for contrast */
+.wraps .btn input[type="submit"] {
+  color: #3d2600;
+}
+
+/* ── Bottom Link ─────────────────────────────────────────────── */
 .a {
   text-align: center;
-  animation: fadeUp 0.6s 0.6s ease both;
+  animation: fadeUp 0.5s 0.55s ease both;
 }
 
 .a p {
   font-size: 0.85rem;
-  color: rgba(255,255,255,0.4);
+  color: var(--text-muted);
 }
 
 .a a {
-  color: var(--accent-lt);
-  text-decoration: none;
+  color: var(--link-color);
   font-weight: 600;
-  transition: color var(--transition), text-decoration var(--transition);
+  text-decoration: none;
+  transition: color var(--transition);
 }
 
 .a a:hover {
-  color: var(--white);
+  color: var(--accent-dk);
   text-decoration: underline;
 }
 
-/* ── Error message ───────────────────────────────────────────── */
+/* ── Error Message ───────────────────────────────────────────── */
 .error-message {
   position: fixed;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(180, 20, 20, 0.92);
-  color: var(--white);
-  padding: 12px 28px;
-  border-radius: 10px;
-  font-size: 0.88rem;
+  background: var(--white);
+  color: #b71c1c;
+  padding: 12px 28px 12px 20px;
+  border-radius: 12px;
+  font-size: 0.875rem;
   font-weight: 500;
-  letter-spacing: 0.03em;
-  border: 1px solid rgba(255,100,100,0.3);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  border-left: 4px solid #e53935;
+  box-shadow: var(--shadow-md);
   z-index: 9999;
   white-space: nowrap;
-  animation: errorIn 0.4s ease both;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: errorIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.error-message::before {
+  content: '!';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fce4e4;
+  color: #b71c1c;
+  font-weight: 800;
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 @keyframes errorIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-/* ── Main / centering wrapper ────────────────────────────────── */
-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
 }
 
 /* ── Footer ─────────────────────────────────────────────────── */
@@ -542,19 +528,18 @@ body {
   width: 100%;
   text-align: center;
   padding: 16px 24px;
-  margin-top: 32px;
-  background-color: var(--maroon);
-  background-image: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-lt) 100%);
-  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 28px;
+  background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-lt) 100%);
+  border-top: none;
 }
 
 .footer p {
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.65);
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 0.08em;
 }
 
-/* ── Responsive: Tablet / Split-screen ─────────────────────── */
+/* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 640px) {
   body { padding: 24px 16px; }
 
@@ -563,14 +548,14 @@ body {
   .wraps,
   .wrappers {
     padding: 36px 28px 32px;
-    border-radius: 16px;
+    border-radius: 18px;
   }
 
   .wrapper h1,
   .wrap h1,
   .wraps h1,
   .wrappers h1 {
-    font-size: 1.65rem;
+    font-size: 1.8rem;
     margin-bottom: 24px;
   }
 
@@ -582,20 +567,20 @@ body {
   .inputed input[type="password"],
   .input-box select {
     font-size: 0.9rem !important;
-    padding: 13px 44px 13px 16px !important;
+    padding: 12px 40px 12px 14px !important;
   }
 
   .btn input[type="submit"] {
     padding: 14px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
 
   .error-message {
     font-size: 0.8rem;
-    padding: 10px 20px;
+    padding: 10px 18px 10px 14px;
     white-space: normal;
     max-width: 90vw;
-    text-align: center;
+    text-align: left;
   }
 }
 
@@ -604,18 +589,18 @@ body {
   .wrap,
   .wraps,
   .wrappers {
-    padding: 28px 20px 24px;
+    padding: 28px 20px 26px;
   }
 
   .wrapper h1,
   .wrap h1,
   .wraps h1,
   .wrappers h1 {
-    font-size: 1.4rem;
+    font-size: 1.55rem;
   }
 }
 
-/* ── Accessibility: Reduced motion ─────────────────────────── */
+/* ── Accessibility ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

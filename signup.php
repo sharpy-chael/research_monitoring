@@ -87,51 +87,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     <title>Sign Up</title>
     <link rel="stylesheet" href="css/signup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .input-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: none;
-            font-size: 14px;
-            background-color: transparent;
-            cursor: pointer;
-            appearance: none;
-            color: #5e0000;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            background-size: 18px;
-            transition: all 0.3s ease;
-        }
-        .input-group select:focus {
-            outline: none;
-            border-color: #007bff;
-            background-color: white;
-        }
-        .input-group select option {
-            padding: 10px;
-        }
-        .name-row {
-            display: flex;
-            gap: 8px;
-        }
-        .name-row .input-group {
-            flex: 1;
-        }
-        .name-row .input-group.middle {
-            flex: 0 0 90px;
-        }
-        @media (max-width: 480px) {
-            .name-row {
-                flex-direction: column;
-                gap: 0;
-            }
-            .name-row .input-group.middle {
-                flex: 1;
-            }
-        }
-    </style>
 </head>
 <body>
     <?php if (isset($_SESSION['error_message'])): ?>
@@ -148,7 +103,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                 <i class="fa-solid fa-user"></i>
             </div>
             <h2>STUDENT SIGN UP</h2>
-
             <form action="" method="post">
                 <div class="name-row">
                     <div class="input-group">
@@ -181,7 +135,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                     <span class="icon"><i class="fa-solid fa-lock"></i></span>
                     <input type="password" name="passw" placeholder="Password" required>
                 </div>
-
                 <div class="submit-btn">
                     <input type="submit" name="submit" value="Sign Up">
                 </div>

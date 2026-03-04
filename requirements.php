@@ -123,6 +123,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'poll_status') {
+    header('Content-Type: application/json');
+    $school_id = $_SESSION['school_id'];
+    $studentStmt = $con->prepare("SELECT group_id FROM student WHERE school_id = :school_id LIMIT 1");
+    $studentStmt->execute(['school_id' => $school_id]);
+    $row = $studentStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || !$row['group_id']) { echo json_encode([]); exit; }
+    $gid = $row['group_id'];
+    $g = $con->prepare("SELECT title_status FROM groups WHERE id = :id");
+    $g->execute(['id' => $gid]);
+    $gRow = $g->fetch(PDO::FETCH_ASSOC);
+    $m = $con->prepare("SELECT proposal_status, final_defense_status, applied_copyright_status, research_presented_status, research_published_status, copyright_approved_status FROM group_milestones WHERE group_id = :id");
+    $m->execute(['id' => $gid]);
+    $mRow = $m->fetch(PDO::FETCH_ASSOC) ?: [];
+    $uf = $con->prepare("SELECT document_type, status FROM urec_documents WHERE group_id = :id ORDER BY uploaded_at DESC");
+    $uf->execute(['id' => $gid]);
+    $urecRows = $uf->fetchAll(PDO::FETCH_ASSOC);
+    $urecMap = [];
+    foreach ($urecRows as $ur) if (!isset($urecMap[$ur['document_type']])) $urecMap[$ur['document_type']] = $ur['status'];
+    $mapStatus = function($v) { return match($v) { 'completed' => 'approved', 'pending' => 'pending', 'rejected' => 'rejected', default => 'missing' }; };
+    $rawTitleStatus = $gRow['title_status'] ?? '';
+    $mappedTitleStatus = ($rawTitleStatus === 'approved') ? 'approved' : (($rawTitleStatus === 'pending_approval') ? 'pending_approval' : (($rawTitleStatus === 'rejected') ? 'rejected' : 'missing'));
+    $rawCopyright = $mRow['copyright_approved_status'] ?? '';
+    $mappedCopyright = $rawCopyright ?: 'missing';
+    echo json_encode([
+        'title_status' => $mappedTitleStatus,
+        'proposal_status' => $mapStatus($mRow['proposal_status'] ?? ''),
+        'final_defense_status' => $mapStatus($mRow['final_defense_status'] ?? ''),
+        'applied_copyright_status' => $mapStatus($mRow['applied_copyright_status'] ?? ''),
+        'research_presented_status' => $mapStatus($mRow['research_presented_status'] ?? ''),
+        'research_published_status' => $mapStatus($mRow['research_published_status'] ?? ''),
+        'copyright_approved_status' => $mappedCopyright,
+        'urec_form_status' => $urecMap['UREC Form'] ?? 'missing',
+        'urec_clearance_status' => $urecMap['UREC Clearance'] ?? 'missing',
+    ]);
+    exit;
+}
+
 $school_id = $_SESSION['school_id'];
 
 $notificationsStmt = $con->prepare("
@@ -671,6 +709,33 @@ async function submitStudentMilestone() {
     btnNext.addEventListener('click', () => { current++; slide(); });
     window.addEventListener('resize', () => { current = 0; slide(); });
     requestAnimationFrame(() => requestAnimationFrame(slide));
+})();
+
+(function() {
+    const snapshot = {
+        title_status: '<?= $titleStatus ?>',
+        proposal_status: '<?= $proposalStatus ?>',
+        final_defense_status: '<?= $finalDefenseStatus ?>',
+        applied_copyright_status: '<?= $appliedCopyrightStatus ?>',
+        research_presented_status: '<?= $researchPresentedStatus ?>',
+        research_published_status: '<?= $researchPublishedStatus ?>',
+        copyright_approved_status: '<?= $copyrightApprovedStatus ?>',
+        urec_form_status: '<?= $urecFormStatus ?>',
+        urec_clearance_status: '<?= $urecClearanceStatus ?>',
+    };
+    setInterval(async () => {
+        try {
+            const fd = new FormData();
+            fd.append('action', 'poll_status');
+            const data = await (await fetch('requirements.php', { method: 'POST', body: fd })).json();
+            for (const key of Object.keys(snapshot)) {
+                if (data[key] !== undefined && data[key] !== snapshot[key]) {
+                    location.reload();
+                    return;
+                }
+            }
+        } catch {}
+    }, 10000);
 })();
 
 const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
