@@ -29,18 +29,9 @@ if (getSettingBool($con, 'maintenance_mode', false)) {
                     border-radius: 10px;
                     backdrop-filter: blur(10px);
                 }
-                .maintenance-box i {
-                    font-size: 80px;
-                    margin-bottom: 20px;
-                }
-                .maintenance-box h1 {
-                    font-size: 2.5rem;
-                    margin: 20px 0;
-                }
-                .maintenance-box p {
-                    font-size: 1.2rem;
-                    opacity: 0.9;
-                }
+                .maintenance-box i { font-size: 80px; margin-bottom: 20px; }
+                .maintenance-box h1 { font-size: 2.5rem; margin: 20px 0; }
+                .maintenance-box p { font-size: 1.2rem; opacity: 0.9; }
             </style>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css">
         </head>
@@ -57,6 +48,7 @@ if (getSettingBool($con, 'maintenance_mode', false)) {
         exit;
     }
 }
+
 include('check_session.php');
 
 if (!isset($_SESSION['submit'])) {
@@ -68,7 +60,7 @@ $notificationsStmt = $con->prepare("
     SELECT id, title, message, priority, created_at, status
     FROM system_notifications
     WHERE (
-        recipient_type = 'all' 
+        recipient_type = 'all'
         OR recipient_type = 'coordinators'
         OR (recipient_type = 'specific' AND recipient_id = :user_id)
     )
@@ -93,24 +85,16 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 <link rel="stylesheet" href="css/notifications.css">
 <title>Coordinator Dashboard</title>
 <style>
-.main-content > h1:not(.dashboard-header-coord h1) {
-    display: none !important;
-}
-.main-content > p:first-of-type {
-    display: none !important;
-}
-.card.progress-card {
-    display: none !important;
-}
+.main-content > h1:not(.dashboard-header-coord h1) { display: none !important; }
+.main-content > p:first-of-type { display: none !important; }
+.card.progress-card { display: none !important; }
 .dashboard-header-coord h1,
 .dashboard-header-coord h1 *,
 .dashboard-header-coord p,
 .dashboard-header-coord strong,
 .dashboard-header-coord .welcome-text-coord,
-.dashboard-header-coord .welcome-text-coord strong {
-    color: white !important;
-}
-.main-content .head{
+.dashboard-header-coord .welcome-text-coord strong { color: white !important; }
+.main-content .head {
     color: white !important;
     font-size: 34px;
     font-weight: 900;
@@ -159,10 +143,16 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                     <select id="programFilter" onchange="updateCharts()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff;cursor:pointer;">
                         <option value="all">All Programs</option>
                         <?php
-                        $programsStmt = $con->query("SELECT DISTINCT program FROM student WHERE program IS NOT NULL ORDER BY program");
+                        $programsStmt = $con->query("
+                            SELECT DISTINCT p.code
+                            FROM programs p
+                            JOIN students s ON s.program_id = p.id
+                            WHERE p.code IS NOT NULL
+                            ORDER BY p.code
+                        ");
                         while ($prog = $programsStmt->fetch(PDO::FETCH_ASSOC)):
                         ?>
-                            <option value="<?= htmlspecialchars($prog['program']) ?>"><?= htmlspecialchars($prog['program']) ?></option>
+                            <option value="<?= htmlspecialchars($prog['code']) ?>"><?= htmlspecialchars($prog['code']) ?></option>
                         <?php endwhile; ?>
                     </select>
                 </div>
@@ -171,7 +161,13 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                     <select id="advisorFilter" onchange="updateCharts()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff;cursor:pointer;">
                         <option value="all">All Advisors</option>
                         <?php
-                        $advisorsStmt = $con->query("SELECT id, name FROM advisor WHERE is_active = TRUE ORDER BY name");
+                        $advisorsStmt = $con->query("
+                            SELECT f.id, u.username as name
+                            FROM faculties f
+                            JOIN users u ON f.user_id = u.id
+                            WHERE u.is_active = TRUE
+                            ORDER BY u.username
+                        ");
                         while ($adv = $advisorsStmt->fetch(PDO::FETCH_ASSOC)):
                         ?>
                             <option value="<?= $adv['id'] ?>"><?= htmlspecialchars($adv['name']) ?></option>
@@ -180,7 +176,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                 </div>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/coordinator-Cu30PJZb.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/coordinator-D5N9XUxb.js" defer></script>
         </div>
     </div>
     <div style="display: none;">
@@ -219,21 +215,19 @@ async function updateProgress() {
     try {
         const program = document.getElementById('programFilter')?.value || 'all';
         const advisor = document.getElementById('advisorFilter')?.value || 'all';
-        const response = await fetch(`/research_monitoring/data/get_coordinator_data.php?program=${program}&advisor=${advisor}`);
+        const response = await fetch(`/research_monitoring_system/data/get_coordinator_data.php?program=${program}&advisor=${advisor}`);
         const data = await response.json();
-        
+
         if (data.progress !== undefined) {
-            const progressBar = document.getElementById('progress-bar-fill-enhanced');
-            const progressText = document.getElementById('progress-text-enhanced');
-            const oldProgressBar = document.getElementById('progress-bar-fill');
+            const progressBar     = document.getElementById('progress-bar-fill-enhanced');
+            const progressText    = document.getElementById('progress-text-enhanced');
+            const oldProgressBar  = document.getElementById('progress-bar-fill');
             const oldProgressText = document.getElementById('progress-text');
-            
-            const progressValue = data.progress + '%';
-            
-            if (progressBar) progressBar.style.width = progressValue;
-            if (progressText) progressText.textContent = progressValue;
-            if (oldProgressBar) oldProgressBar.style.width = progressValue;
-            if (oldProgressText) oldProgressText.textContent = progressValue;
+            const progressValue   = data.progress + '%';
+            if (progressBar)     progressBar.style.width       = progressValue;
+            if (progressText)    progressText.textContent      = progressValue;
+            if (oldProgressBar)  oldProgressBar.style.width    = progressValue;
+            if (oldProgressText) oldProgressText.textContent   = progressValue;
         }
     } catch (error) {
         console.error('Error fetching progress:', error);

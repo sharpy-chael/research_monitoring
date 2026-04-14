@@ -1,7 +1,7 @@
 <?php
 $host = "localhost";          
 $port = "5432";               
-$dbname = "research_monitoring"; 
+$dbname = "research_monitoring_system"; 
 $user = "postgres";          
 $password = "pangitsiyulip";  
 

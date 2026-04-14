@@ -90,6 +90,15 @@ function deleteGroup(groupId, el) {
     });
 }
 
+function buildFullName() {
+    const ln = document.getElementById('editLastname')?.value.trim() || '';
+    const fn = document.getElementById('editFirstname')?.value.trim() || '';
+    const mn = document.getElementById('editMiddlename')?.value.trim() || '';
+    const full = [fn, mn, ln].filter(Boolean).join(' ');
+    const display = document.querySelector('.profile-info h3');
+    if (display) display.textContent = full;
+}
+
 const editBtn = document.getElementById("editToggle");
 const editModal = document.getElementById("editModal");
 const cancelEdit = document.getElementById("cancelEdit");
@@ -223,6 +232,36 @@ function showModalError(message) {
         msg.style.display = "none";
         msg.innerText = "";
     }, 5000);
+}
+
+const changePasswordForm = document.getElementById("changePasswordForm");
+
+if (changePasswordForm) {
+    changePasswordForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const current = document.getElementById("currentPassword").value;
+        const newPass = document.getElementById("newPassword").value;
+        const confirm = document.getElementById("confirmPassword").value;
+
+        fetch("php/change_password.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "current_password=" + encodeURIComponent(current) +
+                  "&new_password="     + encodeURIComponent(newPass) +
+                  "&confirm_password=" + encodeURIComponent(confirm)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                closeModal();
+                showToast(data.message, "success");
+                changePasswordForm.reset();
+            } else {
+                showToast(data.message, "error");
+            }
+        })
+        .catch(() => showToast("An error occurred. Please try again.", "error"));
+    });
 }
 
 function submitGroupAssignment() {

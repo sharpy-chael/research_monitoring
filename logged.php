@@ -1,16 +1,13 @@
-<!-- COORDINATOR LOGIN -->
 <?php
 session_start();
-include "connect.php"; 
+include "connect.php";
 
 if (!empty($_POST['submit'])) {
-    $_SESSION['submit'] = $_POST['submit'];
     $name = $_POST['name'];
     $password = $_POST['password'];
 
-    $stmt = $con->prepare("SELECT * FROM coordinator WHERE name = :name");
+    $stmt = $con->prepare("SELECT * FROM users WHERE username = :name AND role = 'coordinator'");
     $stmt->execute(['name' => $name]);
-
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row && password_verify($password, $row['pass_word'])) {
@@ -19,11 +16,12 @@ if (!empty($_POST['submit'])) {
             header("Location: logged.php");
             exit;
         }
-        
-        $_SESSION['name'] = $row['name'];
+
+        $_SESSION['name'] = $row['username'];
         $_SESSION['id'] = $row['id'];
         $_SESSION['role'] = 'coordinator';
-        
+        $_SESSION['submit'] = true;
+
         include('php/log_helper.php');
         logActivity($con, $_SESSION['id'], $_SESSION['role'], 'login', $_SESSION['name'] . ' logged in');
 
@@ -41,7 +39,6 @@ if (!empty($_POST['submit'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

@@ -14,9 +14,9 @@ $programs        = $con->query("SELECT * FROM programs ORDER BY code")->fetchAll
 $academicYears   = $con->query("SELECT * FROM academic_years ORDER BY year_start DESC, semester")->fetchAll(PDO::FETCH_ASSOC);
 $researchStatuses= $con->query("SELECT * FROM research_statuses ORDER BY display_order")->fetchAll(PDO::FETCH_ASSOC);
 
-$totalStudents = $con->query("SELECT COUNT(*) FROM student")->fetchColumn();
+$totalStudents = $con->query("SELECT COUNT(*) FROM students")->fetchColumn();
 $totalGroups   = $con->query("SELECT COUNT(*) FROM groups")->fetchColumn();
-$totalAdvisors = $con->query("SELECT COUNT(*) FROM advisor")->fetchColumn();
+$totalAdvisors = $con->query("SELECT COUNT(*) FROM faculties")->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">

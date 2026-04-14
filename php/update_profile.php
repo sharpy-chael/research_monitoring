@@ -3,12 +3,9 @@ session_start();
 include("../connect.php");
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
     $lastname   = $_POST['lastname'];
     $firstname  = $_POST['firstname'];
     $middlename = $_POST['middlename'] ?? '';
-    $program    = $_POST['program'];
-    $title      = $_POST['title'] ?? $_SESSION['research_title'];
     $email      = $_POST['email'];
     $address    = $_POST['address'];
     $gender     = $_POST['gender'];
@@ -21,15 +18,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $updateImage = "";
     $params = [
-        ':lastname'       => $lastname,
-        ':firstname'      => $firstname,
-        ':middlename'     => $middlename,
-        ':program'        => $program,
-        ':research_title' => $title,
-        ':email'          => $email,
-        ':address'        => $address,
-        ':gender'         => $gender,
-        ':school_id'      => $school_id
+        ':lastname'   => $lastname,
+        ':firstname'  => $firstname,
+        ':middlename' => $middlename,
+        ':email'      => $email,
+        ':address'    => $address,
+        ':gender'     => $gender,
+        ':school_id'  => $school_id
     ];
 
     if (!empty($_FILES['profile_image']['name'])) {
@@ -48,16 +43,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $sql = "
-        UPDATE student 
-        SET 
-            lastname = :lastname,
-            firstname = :firstname,
+        UPDATE students
+        SET lastname   = :lastname,
+            firstname  = :firstname,
             middlename = :middlename,
-            program = :program,
-            research_title = :research_title,
-            email = :email,
-            address = :address,
-            gender = :gender
+            email      = :email,
+            address    = :address,
+            gender     = :gender
             $updateImage
         WHERE school_id = :school_id
     ";
@@ -65,20 +57,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt = $con->prepare($sql);
 
     if ($stmt->execute($params)) {
-        $_SESSION['lastname']       = $lastname;
-        $_SESSION['firstname']      = $firstname;
-        $_SESSION['middlename']     = $middlename;
-        $_SESSION['name']           = $displayName;
-        $_SESSION['program']        = $program;
-        $_SESSION['research_title'] = $title;
-        $_SESSION['email']          = $email;
-        $_SESSION['address']        = $address;
-        $_SESSION['gender']         = $gender;
+        $_SESSION['lastname']   = $lastname;
+        $_SESSION['firstname']  = $firstname;
+        $_SESSION['middlename'] = $middlename;
+        $_SESSION['name']       = $displayName;
+        $_SESSION['email']      = $email;
+        $_SESSION['address']    = $address;
+        $_SESSION['gender']     = $gender;
 
         if (!empty($updateImage)) {
             $_SESSION['images'] = $fileName;
         }
 
+        $_SESSION['flash_success'] = 'Personal Info Updated Successfully';
         header("Location: ../student_profile.php");
         exit();
     } else {

@@ -8,18 +8,17 @@ try {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'create_group') {
-        if (!isset($_SESSION['id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'advisor') {
+        if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'advisor') {
             echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
             exit;
         }
 
-        $sessionUserId = $_SESSION['id'];
-        $advisorStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
-        $advisorStmt->execute(['id' => $sessionUserId]);
-        $advisorData = $advisorStmt->fetch(PDO::FETCH_ASSOC);
-        $advisorId = $advisorData['advisor_id'];
+        $facStmt = $con->prepare("SELECT id FROM faculties WHERE user_id = :user_id");
+        $facStmt->execute(['user_id' => $_SESSION['id']]);
+        $facRow = $facStmt->fetch(PDO::FETCH_ASSOC);
+        $facultyId = $facRow['id'] ?? null;
 
-        if (!$advisorId) {
+        if (!$facultyId) {
             echo json_encode(['success' => false, 'message' => 'Advisor ID not found']);
             exit;
         }
@@ -33,39 +32,37 @@ try {
 
         $checkStmt = $con->prepare("SELECT id FROM groups WHERE name = :name");
         $checkStmt->execute(['name' => $groupName]);
-
         if ($checkStmt->fetch()) {
             echo json_encode(['success' => false, 'message' => 'A group with this name already exists']);
             exit;
         }
 
-        $insertStmt = $con->prepare("INSERT INTO groups (name, advisor_id) VALUES (:name, :advisor_id)");
-        $insertStmt->execute(['name' => $groupName, 'advisor_id' => $advisorId]);
-        $newGroupId = $con->lastInsertId();
+        $insertStmt = $con->prepare("INSERT INTO groups (name, adviser_id) VALUES (:name, :adviser_id) RETURNING id");
+        $insertStmt->execute(['name' => $groupName, 'adviser_id' => $facultyId]);
+        $newGroupId = $insertStmt->fetch(PDO::FETCH_ASSOC)['id'];
 
         echo json_encode(['success' => true, 'message' => 'Group created successfully', 'group_id' => $newGroupId]);
         exit;
     }
 
     if ($action === 'add_members') {
-        if (!isset($_SESSION['id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'advisor') {
+        if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'advisor') {
             echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
             exit;
         }
 
-        $sessionUserId = $_SESSION['id'];
-        $advisorStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE id = :id");
-        $advisorStmt->execute(['id' => $sessionUserId]);
-        $advisorData = $advisorStmt->fetch(PDO::FETCH_ASSOC);
-        $advisorId = $advisorData['advisor_id'];
+        $facStmt = $con->prepare("SELECT id FROM faculties WHERE user_id = :user_id");
+        $facStmt->execute(['user_id' => $_SESSION['id']]);
+        $facRow = $facStmt->fetch(PDO::FETCH_ASSOC);
+        $facultyId = $facRow['id'] ?? null;
 
-        if (!$advisorId) {
+        if (!$facultyId) {
             echo json_encode(['success' => false, 'message' => 'Advisor ID not found']);
             exit;
         }
 
-        $groupId = $_POST['group_id'] ?? null;
-        $leaderId = trim($_POST['leader_id'] ?? '');
+        $groupId   = $_POST['group_id']   ?? null;
+        $leaderId  = trim($_POST['leader_id']  ?? '');
         $memberIds = trim($_POST['member_ids'] ?? '');
 
         if (empty($groupId)) {
@@ -73,34 +70,37 @@ try {
             exit;
         }
 
-        $verifyStmt = $con->prepare("SELECT id FROM groups WHERE id = :group_id AND advisor_id = :advisor_id");
-        $verifyStmt->execute(['group_id' => $groupId, 'advisor_id' => $advisorId]);
-
+        $verifyStmt = $con->prepare("SELECT id FROM groups WHERE id = :group_id AND adviser_id = :adviser_id");
+        $verifyStmt->execute(['group_id' => $groupId, 'adviser_id' => $facultyId]);
         if (!$verifyStmt->fetch()) {
             echo json_encode(['success' => false, 'message' => 'You do not have permission to modify this group']);
             exit;
         }
 
-        $addedMembers = [];
-        $notFound = [];
-        $alreadyInGroup = [];
+        $addedMembers = []; $notFound = [];
 
         if (!empty($leaderId)) {
-            $removeLeaderStmt = $con->prepare("UPDATE student SET is_leader = FALSE WHERE group_id = :group_id AND is_leader = TRUE");
-            $removeLeaderStmt->execute(['group_id' => $groupId]);
-
-            $leaderCheckStmt = $con->prepare("SELECT id, name, group_id FROM student WHERE school_id = :school_id");
+            $leaderCheckStmt = $con->prepare("
+                SELECT id, TRIM(COALESCE(firstname,'') || ' ' || COALESCE(middlename,'') || ' ' || COALESCE(lastname,'')) AS name
+                FROM students WHERE school_id = :school_id
+            ");
             $leaderCheckStmt->execute(['school_id' => $leaderId]);
             $leader = $leaderCheckStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($leader) {
-                if ($leader['group_id'] && $leader['group_id'] != $groupId) {
-                    $alreadyInGroup[] = $leader['name'] . ' (Leader)';
+                $con->prepare("UPDATE student_groups SET is_leader = FALSE WHERE group_id = :group_id AND is_leader = TRUE")
+                    ->execute(['group_id' => $groupId]);
+
+                $checkStmt = $con->prepare("SELECT id FROM student_groups WHERE student_id = :student_id AND group_id = :group_id");
+                $checkStmt->execute(['student_id' => $leader['id'], 'group_id' => $groupId]);
+                if ($checkStmt->rowCount() > 0) {
+                    $con->prepare("UPDATE student_groups SET is_leader = TRUE WHERE student_id = :student_id AND group_id = :group_id")
+                        ->execute(['student_id' => $leader['id'], 'group_id' => $groupId]);
                 } else {
-                    $updateLeaderStmt = $con->prepare("UPDATE student SET group_id = :group_id, is_leader = TRUE WHERE school_id = :school_id");
-                    $updateLeaderStmt->execute(['group_id' => $groupId, 'school_id' => $leaderId]);
-                    $addedMembers[] = $leader['name'] . ' (Leader)';
+                    $con->prepare("INSERT INTO student_groups (student_id, group_id, is_leader) VALUES (:student_id, :group_id, TRUE)")
+                        ->execute(['student_id' => $leader['id'], 'group_id' => $groupId]);
                 }
+                $addedMembers[] = $leader['name'] . ' (Leader)';
             } else {
                 $notFound[] = $leaderId . ' (Leader)';
             }
@@ -108,22 +108,24 @@ try {
 
         if (!empty($memberIds)) {
             $memberIdArray = array_filter(array_map('trim', explode(',', $memberIds)));
-
             foreach ($memberIdArray as $memberId) {
                 if ($memberId === $leaderId) continue;
 
-                $memberCheckStmt = $con->prepare("SELECT id, name, group_id FROM student WHERE school_id = :school_id");
+                $memberCheckStmt = $con->prepare("
+                    SELECT id, TRIM(COALESCE(firstname,'') || ' ' || COALESCE(middlename,'') || ' ' || COALESCE(lastname,'')) AS name
+                    FROM students WHERE school_id = :school_id
+                ");
                 $memberCheckStmt->execute(['school_id' => $memberId]);
                 $member = $memberCheckStmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($member) {
-                    if ($member['group_id']) {
-                        $alreadyInGroup[] = $member['name'];
-                    } else {
-                        $updateMemberStmt = $con->prepare("UPDATE student SET group_id = :group_id, is_leader = FALSE WHERE school_id = :school_id");
-                        $updateMemberStmt->execute(['group_id' => $groupId, 'school_id' => $memberId]);
-                        $addedMembers[] = $member['name'];
+                    $checkStmt = $con->prepare("SELECT id FROM student_groups WHERE student_id = :student_id AND group_id = :group_id");
+                    $checkStmt->execute(['student_id' => $member['id'], 'group_id' => $groupId]);
+                    if ($checkStmt->rowCount() === 0) {
+                        $con->prepare("INSERT INTO student_groups (student_id, group_id, is_leader) VALUES (:student_id, :group_id, FALSE)")
+                            ->execute(['student_id' => $member['id'], 'group_id' => $groupId]);
                     }
+                    $addedMembers[] = $member['name'];
                 } else {
                     $notFound[] = $memberId;
                 }
@@ -131,49 +133,45 @@ try {
         }
 
         $message = '';
-        if (!empty($addedMembers)) $message .= 'Added: ' . implode(', ', $addedMembers) . '. ';
-        if (!empty($alreadyInGroup)) $message .= 'Already in a group: ' . implode(', ', $alreadyInGroup) . '. ';
-        if (!empty($notFound)) $message .= 'Not found: ' . implode(', ', $notFound) . '. ';
-        if (empty($message)) $message = 'No changes were made.';
+        if (!empty($addedMembers)) $message .= 'Added: '     . implode(', ', $addedMembers) . '. ';
+        if (!empty($notFound))     $message .= 'Not found: ' . implode(', ', $notFound)      . '. ';
+        if (empty($message))       $message = 'No changes were made.';
 
         echo json_encode([
-            'success' => true,
-            'message' => trim($message),
+            'success'       => true,
+            'message'       => trim($message),
             'added_members' => $addedMembers,
-            'already_in_group' => $alreadyInGroup,
-            'not_found' => $notFound
+            'not_found'     => $notFound
         ]);
         exit;
     }
 
-    $groupId = $_POST['group_id'] ?? '';
-    $newGroup = trim($_POST['new_group'] ?? '');
-    $leaderId = trim($_POST['leader_id'] ?? '');
+    $groupId   = $_POST['group_id']   ?? '';
+    $newGroup  = trim($_POST['new_group']  ?? '');
+    $leaderId  = trim($_POST['leader_id']  ?? '');
     $advisorId = trim($_POST['advisor_id'] ?? '');
-    $students = trim($_POST['students'] ?? '');
+    $students  = trim($_POST['students']   ?? '');
 
     $response = [
-        'status' => 'error',
-        'message' => '',
-        'group_id' => null,
-        'adviser_name' => null,
-        'leader_name' => null,
+        'status'        => 'error',
+        'message'       => '',
+        'group_id'      => null,
+        'adviser_name'  => null,
+        'leader_name'   => null,
         'added_members' => []
     ];
 
     if (!empty($newGroup)) {
         $checkStmt = $con->prepare("SELECT id FROM groups WHERE name = :name");
         $checkStmt->execute(['name' => $newGroup]);
-
         if ($checkStmt->fetch()) {
             $response['message'] = "Group '$newGroup' already exists.";
             echo json_encode($response);
             exit;
         }
-
-        $insertStmt = $con->prepare("INSERT INTO groups (name) VALUES (:name)");
+        $insertStmt = $con->prepare("INSERT INTO groups (name) VALUES (:name) RETURNING id");
         $insertStmt->execute(['name' => $newGroup]);
-        $groupId = $con->lastInsertId();
+        $groupId = $insertStmt->fetch(PDO::FETCH_ASSOC)['id'];
     } else if (empty($groupId)) {
         $response['message'] = "Please select a group or create a new one.";
         echo json_encode($response);
@@ -181,13 +179,13 @@ try {
     }
 
     if (!empty($advisorId)) {
-        $adviserCheckStmt = $con->prepare("SELECT advisor_id, name FROM advisor WHERE advisor_id = :advisor_id");
-        $adviserCheckStmt->execute(['advisor_id' => $advisorId]);
+        $adviserCheckStmt = $con->prepare("SELECT id, name FROM faculties WHERE id = :adviser_id");
+        $adviserCheckStmt->execute(['adviser_id' => $advisorId]);
         $adviser = $adviserCheckStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($adviser) {
-            $updateAdviserStmt = $con->prepare("UPDATE groups SET advisor_id = :advisor_id WHERE id = :group_id");
-            $updateAdviserStmt->execute(['advisor_id' => $advisorId, 'group_id' => $groupId]);
+            $con->prepare("UPDATE groups SET adviser_id = :adviser_id WHERE id = :group_id")
+                ->execute(['adviser_id' => $advisorId, 'group_id' => $groupId]);
             $response['adviser_name'] = $adviser['name'];
         } else {
             $response['message'] = "Adviser ID $advisorId not found.";
@@ -197,16 +195,26 @@ try {
     }
 
     if (!empty($leaderId)) {
-        $removeLeaderStmt = $con->prepare("UPDATE student SET is_leader = FALSE WHERE group_id = :group_id AND is_leader = TRUE");
-        $removeLeaderStmt->execute(['group_id' => $groupId]);
-
-        $leaderCheckStmt = $con->prepare("SELECT id, name FROM student WHERE school_id = :school_id");
+        $leaderCheckStmt = $con->prepare("
+            SELECT id, TRIM(COALESCE(firstname,'') || ' ' || COALESCE(middlename,'') || ' ' || COALESCE(lastname,'')) AS name
+            FROM students WHERE school_id = :school_id
+        ");
         $leaderCheckStmt->execute(['school_id' => $leaderId]);
         $leader = $leaderCheckStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($leader) {
-            $updateLeaderStmt = $con->prepare("UPDATE student SET group_id = :group_id, is_leader = TRUE WHERE school_id = :school_id");
-            $updateLeaderStmt->execute(['group_id' => $groupId, 'school_id' => $leaderId]);
+            $con->prepare("UPDATE student_groups SET is_leader = FALSE WHERE group_id = :group_id AND is_leader = TRUE")
+                ->execute(['group_id' => $groupId]);
+
+            $checkStmt = $con->prepare("SELECT id FROM student_groups WHERE student_id = :student_id AND group_id = :group_id");
+            $checkStmt->execute(['student_id' => $leader['id'], 'group_id' => $groupId]);
+            if ($checkStmt->rowCount() > 0) {
+                $con->prepare("UPDATE student_groups SET is_leader = TRUE WHERE student_id = :student_id AND group_id = :group_id")
+                    ->execute(['student_id' => $leader['id'], 'group_id' => $groupId]);
+            } else {
+                $con->prepare("INSERT INTO student_groups (student_id, group_id, is_leader) VALUES (:student_id, :group_id, TRUE)")
+                    ->execute(['student_id' => $leader['id'], 'group_id' => $groupId]);
+            }
             $response['leader_name'] = $leader['name'];
         } else {
             $response['message'] = "Leader with School ID $leaderId not found.";
@@ -217,17 +225,23 @@ try {
 
     if (!empty($students)) {
         $studentIds = array_filter(array_map('trim', explode(',', $students)));
-
         foreach ($studentIds as $studentId) {
             if ($studentId === $leaderId) continue;
 
-            $studentCheckStmt = $con->prepare("SELECT id, name FROM student WHERE school_id = :school_id");
+            $studentCheckStmt = $con->prepare("
+                SELECT id, TRIM(COALESCE(firstname,'') || ' ' || COALESCE(middlename,'') || ' ' || COALESCE(lastname,'')) AS name
+                FROM students WHERE school_id = :school_id
+            ");
             $studentCheckStmt->execute(['school_id' => $studentId]);
             $student = $studentCheckStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($student) {
-                $updateStudentStmt = $con->prepare("UPDATE student SET group_id = :group_id, is_leader = FALSE WHERE school_id = :school_id");
-                $updateStudentStmt->execute(['group_id' => $groupId, 'school_id' => $studentId]);
+                $checkStmt = $con->prepare("SELECT id FROM student_groups WHERE student_id = :student_id AND group_id = :group_id");
+                $checkStmt->execute(['student_id' => $student['id'], 'group_id' => $groupId]);
+                if ($checkStmt->rowCount() === 0) {
+                    $con->prepare("INSERT INTO student_groups (student_id, group_id, is_leader) VALUES (:student_id, :group_id, FALSE)")
+                        ->execute(['student_id' => $student['id'], 'group_id' => $groupId]);
+                }
                 $response['added_members'][] = ['id' => $student['id'], 'name' => $student['name']];
             } else {
                 $response['message'] = "Student with School ID $studentId not found.";
@@ -237,9 +251,9 @@ try {
         }
     }
 
-    $response['status'] = 'success';
+    $response['status']   = 'success';
     $response['group_id'] = $groupId;
-    $response['message'] = 'Group assignment successful!';
+    $response['message']  = 'Group assignment successful!';
     echo json_encode($response);
 
 } catch (PDOException $e) {

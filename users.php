@@ -4,50 +4,56 @@ include("connect.php");
 include('php/get_setting.php');
 include("check_session.php");
 
-
 if (!isset($_SESSION['submit']) || $_SESSION['role'] !== 'admin') {
     header('Location: home.php');
     exit;
 }
 
 $students = $con->query("
-    SELECT s.id, s.lastname, s.firstname, s.middlename, s.school_id, s.program, s.is_active, s.group_id, g.name as group_name
-    FROM student s
-    LEFT JOIN groups g ON s.group_id = g.id
+    SELECT s.id, s.firstname, s.lastname, s.middlename, s.school_id, s.is_active,
+           p.code AS program, p.id AS program_id,
+           (
+               SELECT g.name FROM student_groups sg
+               JOIN groups g ON sg.group_id = g.id
+               WHERE sg.student_id = s.id
+               ORDER BY sg.id ASC LIMIT 1
+           ) AS group_name,
+           (
+               SELECT sg.group_id FROM student_groups sg
+               WHERE sg.student_id = s.id
+               ORDER BY sg.id ASC LIMIT 1
+           ) AS group_id
+    FROM students s
+    JOIN users u ON s.user_id = u.id
+    LEFT JOIN programs p ON s.program_id = p.id
     ORDER BY s.lastname, s.firstname
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $advisors = $con->query("
-    SELECT a.id, a.name, a.advisor_id, a.is_active, COUNT(g.id) as group_count
-    FROM advisor a
-    LEFT JOIN groups g ON CAST(a.advisor_id AS VARCHAR) = CAST(g.advisor_id AS VARCHAR)
-    GROUP BY a.id, a.name, a.advisor_id, a.is_active
-    ORDER BY a.name
+    SELECT f.id, f.name, u.id AS user_id, u.username AS advisor_username, u.is_active,
+           COUNT(DISTINCT ra.research_id) AS group_count
+    FROM faculties f
+    JOIN users u ON f.user_id = u.id
+    LEFT JOIN research_advisers ra ON ra.faculty_id = f.id
+    GROUP BY f.id, f.name, u.id, u.username, u.is_active
+    ORDER BY f.name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $coordinators = $con->query("
-    SELECT id, name, is_active
-    FROM coordinator
-    ORDER BY name
+    SELECT u.id, u.username AS name, u.is_active
+    FROM users u
+    WHERE u.role = 'coordinator'
+    ORDER BY u.username
 ")->fetchAll(PDO::FETCH_ASSOC);
 
+$activePrograms = $con->query("SELECT id, code, name FROM programs WHERE is_active = TRUE ORDER BY code")->fetchAll(PDO::FETCH_ASSOC);
 $groups = $con->query("SELECT id, name FROM groups ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 
-$activePrograms = [];
-try {
-    $activePrograms = $con->query("SELECT code, name FROM programs WHERE is_active = TRUE ORDER BY code")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $activePrograms = [
-        ['code' => 'DIT',  'name' => 'Diploma in Information Technology'],
-        ['code' => 'BSIT', 'name' => 'Bachelor of Science in Information Technology']
-    ];
-}
-
 foreach ($students as &$s) {
-    $fn = trim($s['firstname'] ?? '');
+    $fn = trim($s['firstname']  ?? '');
     $mn = trim($s['middlename'] ?? '');
-    $ln = trim($s['lastname'] ?? '');
-    $s['display_name'] = trim($fn . ($mn ? ' ' . $mn : '') . ($ln ? ' ' . $ln : ''));
+    $ln = trim($s['lastname']   ?? '');
+    $s['display_name'] = trim($fn . ($mn ? ' ' . $mn : '') . ' ' . $ln);
 }
 unset($s);
 ?>
@@ -80,7 +86,6 @@ unset($s);
             </button>
         </div>
 
-        <!-- STUDENTS TAB -->
         <div id="students-tab" class="tab-content active">
             <div class="section-header-compact">
                 <h2>Student Accounts</h2>
@@ -134,7 +139,7 @@ unset($s);
                             <option value="">All</option>
                             <option value="unassigned">Unassigned</option>
                             <?php foreach ($groups as $group): ?>
-                                <option value="<?= htmlspecialchars($group['name']) ?>"><?= htmlspecialchars($group['name']) ?></option>
+                                <option value="<?= htmlspecialchars(strtolower($group['name'])) ?>"><?= htmlspecialchars($group['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -161,11 +166,11 @@ unset($s);
                             <tr class="<?= $student['is_active'] ? '' : 'inactive-row' ?>"
                                 data-name="<?= htmlspecialchars(strtolower($student['display_name'])) ?>"
                                 data-id="<?= htmlspecialchars(strtolower($student['school_id'])) ?>"
-                                data-program="<?= htmlspecialchars($student['program']) ?>"
+                                data-program="<?= htmlspecialchars(strtolower($student['program'] ?? '')) ?>"
                                 data-group="<?= htmlspecialchars(strtolower($student['group_name'] ?? 'unassigned')) ?>">
                                 <td><?= htmlspecialchars($student['display_name']) ?></td>
                                 <td><?= htmlspecialchars($student['school_id']) ?></td>
-                                <td><?= htmlspecialchars($student['program']) ?></td>
+                                <td><?= htmlspecialchars($student['program'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($student['group_name'] ?? 'Unassigned') ?></td>
                                 <td>
                                     <span class="status-badge <?= $student['is_active'] ? 'active' : 'inactive' ?>">
@@ -191,7 +196,6 @@ unset($s);
             </div>
         </div>
 
-        <!-- ADVISORS TAB -->
         <div id="advisors-tab" class="tab-content">
             <div class="section-header-compact">
                 <h2>Advisor Accounts</h2>
@@ -246,9 +250,9 @@ unset($s);
                         <?php foreach ($advisors as $advisor): ?>
                             <tr class="<?= $advisor['is_active'] ? '' : 'inactive-row' ?>"
                                 data-name="<?= htmlspecialchars(strtolower($advisor['name'])) ?>"
-                                data-advisor-id="<?= htmlspecialchars(strtolower($advisor['advisor_id'] ?? '')) ?>">
+                                data-advisor-id="<?= htmlspecialchars(strtolower($advisor['advisor_username'] ?? '')) ?>">
                                 <td><?= htmlspecialchars($advisor['name']) ?></td>
-                                <td><?= htmlspecialchars($advisor['advisor_id'] ?? 'N/A') ?></td>
+                                <td><?= htmlspecialchars($advisor['advisor_username'] ?? 'N/A') ?></td>
                                 <td><?= $advisor['group_count'] ?> groups</td>
                                 <td>
                                     <span class="status-badge <?= $advisor['is_active'] ? 'active' : 'inactive' ?>">
@@ -274,7 +278,6 @@ unset($s);
             </div>
         </div>
 
-        <!-- COORDINATORS TAB -->
         <div id="coordinators-tab" class="tab-content">
             <div class="section-header-compact">
                 <h2>Coordinator Accounts</h2>
@@ -318,13 +321,11 @@ unset($s);
         <div class="space"></div>
     </main>
 
-    <!-- User Modal -->
     <div class="modal" id="userModal">
         <div class="modal-overlay" onclick="closeModal()"></div>
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">&times;</button>
             <h3 id="modalTitle">Add User</h3>
-
             <form id="userForm">
                 <input type="hidden" id="userId"     name="user_id">
                 <input type="hidden" id="userType"   name="user_type">
@@ -332,7 +333,7 @@ unset($s);
 
                 <div class="form-group" id="nameGroup">
                     <label>Name <span class="required">*</span></label>
-                    <input type="text" id="userName" name="name" required>
+                    <input type="text" id="userName" name="name">
                 </div>
 
                 <div class="form-group" id="lastnameGroup" style="display:none;">
@@ -350,29 +351,29 @@ unset($s);
                     <input type="text" id="userMiddlename" name="middlename">
                 </div>
 
-                <div class="form-group" id="advisorIdGroup">
+                <div class="form-group" id="advisorIdGroup" style="display:none;">
                     <label>Advisor ID <span class="required">*</span></label>
                     <input type="text" id="advisorId" name="advisor_id">
                 </div>
 
-                <div class="form-group" id="schoolIdGroup">
+                <div class="form-group" id="schoolIdGroup" style="display:none;">
                     <label>Student ID <span class="required">*</span></label>
                     <input type="text" id="schoolId" name="school_id">
                 </div>
 
-                <div class="form-group" id="programGroup">
+                <div class="form-group" id="programGroup" style="display:none;">
                     <label>Program <span class="required">*</span></label>
-                    <select id="program" name="program">
+                    <select id="program" name="program_id">
                         <option value="" disabled selected>Select a program</option>
                         <?php foreach ($activePrograms as $prog): ?>
-                            <option value="<?= htmlspecialchars($prog['code']) ?>">
+                            <option value="<?= htmlspecialchars($prog['id']) ?>">
                                 <?= htmlspecialchars($prog['name']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
-                <div class="form-group" id="groupGroup">
+                <div class="form-group" id="groupGroup" style="display:none;">
                     <label>Assign to Group</label>
                     <select id="groupId" name="group_id">
                         <option value="">No Group</option>
@@ -385,7 +386,7 @@ unset($s);
                 <div class="form-group" id="passwordGroup">
                     <label>Password <span class="required" id="passwordRequired">*</span></label>
                     <input type="password" id="password" name="password">
-                    <small id="passwordHint">Leave blank to keep current password (Password must have 8 characters)</small>
+                    <small id="passwordHint" style="display:none;">Leave blank to keep current password (min. 8 characters)</small>
                 </div>
 
                 <div class="modal-buttons">
@@ -396,18 +397,16 @@ unset($s);
         </div>
     </div>
 
-    <!-- CSV Import Modal -->
     <div class="modal" id="csvModal">
         <div class="modal-overlay" onclick="closeCsvModal()"></div>
         <div class="modal-content">
             <button class="modal-close" onclick="closeCsvModal()">&times;</button>
             <h3><i class="ri-upload-2-line"></i> Import Students via CSV</h3>
-
             <div class="csv-format-info">
                 <p><strong>Required CSV format:</strong></p>
-                <code>lastname, firstname, middlename, school_id, program, password</code>
+                <code>lastname, firstname, middlename, school_id, program_code, password</code>
                 <ul>
-                    <li>First row must be the header: <strong>lastname, firstname, middlename, school_id, program, password</strong></li>
+                    <li>First row must be the header</li>
                     <li>middlename can be left empty</li>
                     <li>Program must match an active program code (e.g., <strong><?= implode(', ', array_column($activePrograms, 'code')) ?></strong>)</li>
                     <li>Password must be at least 8 characters</li>
@@ -417,15 +416,12 @@ unset($s);
                     <i class="ri-download-line"></i> Download Sample CSV
                 </a>
             </div>
-
             <form id="csvForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Select CSV File <span class="required">*</span></label>
                     <input type="file" id="csvFile" name="csv_file" accept=".csv" required>
                 </div>
-
                 <div id="csvResults" class="csv-results" style="display:none;"></div>
-
                 <div class="modal-buttons">
                     <button type="button" class="btn-cancel" onclick="closeCsvModal()">Cancel</button>
                     <button type="submit" class="btn-submit" id="csvSubmitBtn">
@@ -436,7 +432,6 @@ unset($s);
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
     <div class="modal confirm-modal" id="confirmModal">
         <div class="modal-overlay" onclick="closeConfirmModal()"></div>
         <div class="modal-content">
@@ -473,7 +468,7 @@ unset($s);
         document.getElementById(tabName + '-tab').classList.add('active');
     }
 
-    function showStudentNameFields(show) {
+    function showStudentFields(show) {
         document.getElementById('nameGroup').style.display       = show ? 'none'  : 'block';
         document.getElementById('lastnameGroup').style.display   = show ? 'block' : 'none';
         document.getElementById('firstnameGroup').style.display  = show ? 'block' : 'none';
@@ -491,12 +486,12 @@ unset($s);
         document.getElementById('userType').value   = type;
         document.getElementById('formAction').value = 'create';
 
-        showStudentNameFields(type === 'student');
+        showStudentFields(type === 'student');
 
-        document.getElementById('advisorIdGroup').style.display = type === 'advisor' ? 'block' : 'none';
-        document.getElementById('schoolIdGroup').style.display  = type === 'student' ? 'block' : 'none';
-        document.getElementById('programGroup').style.display   = type === 'student' ? 'block' : 'none';
-        document.getElementById('groupGroup').style.display     = type === 'student' ? 'block' : 'none';
+        document.getElementById('advisorIdGroup').style.display = type === 'advisor'  ? 'block' : 'none';
+        document.getElementById('schoolIdGroup').style.display  = type === 'student'  ? 'block' : 'none';
+        document.getElementById('programGroup').style.display   = type === 'student'  ? 'block' : 'none';
+        document.getElementById('groupGroup').style.display     = type === 'student'  ? 'block' : 'none';
         document.getElementById('passwordHint').style.display   = 'none';
         document.getElementById('passwordRequired').style.display = 'inline';
         document.getElementById('password').required = true;
@@ -512,22 +507,22 @@ unset($s);
         document.getElementById('userType').value   = type;
         document.getElementById('formAction').value = 'update';
 
-        showStudentNameFields(type === 'student');
+        showStudentFields(type === 'student');
 
         if (type === 'student') {
             document.getElementById('userLastname').value   = user.lastname   || '';
             document.getElementById('userFirstname').value  = user.firstname  || '';
             document.getElementById('userMiddlename').value = user.middlename || '';
-            document.getElementById('schoolId').value = user.school_id || '';
-            document.getElementById('program').value  = user.program   || '';
-            document.getElementById('groupId').value  = user.group_id  || '';
+            document.getElementById('schoolId').value       = user.school_id  || '';
+            document.getElementById('program').value        = user.program_id || '';
+            document.getElementById('groupId').value        = user.group_id   || '';
             document.getElementById('schoolIdGroup').style.display  = 'block';
             document.getElementById('programGroup').style.display   = 'block';
             document.getElementById('groupGroup').style.display     = 'block';
             document.getElementById('advisorIdGroup').style.display = 'none';
         } else if (type === 'advisor') {
-            document.getElementById('userName').value  = user.name       || '';
-            document.getElementById('advisorId').value = user.advisor_id || '';
+            document.getElementById('userName').value  = user.name             || '';
+            document.getElementById('advisorId').value = user.advisor_username || '';
             document.getElementById('advisorIdGroup').style.display = 'block';
             document.getElementById('schoolIdGroup').style.display  = 'none';
             document.getElementById('programGroup').style.display   = 'none';
@@ -541,8 +536,8 @@ unset($s);
             document.getElementById('groupGroup').style.display     = 'none';
         }
 
-        document.getElementById('passwordHint').style.display     = 'block';
-        document.getElementById('passwordRequired').style.display = 'none';
+        document.getElementById('passwordHint').style.display      = 'block';
+        document.getElementById('passwordRequired').style.display  = 'none';
         document.getElementById('password').required = false;
     }
 
@@ -613,8 +608,8 @@ unset($s);
     function openConfirmModal(type, id, newStatus, userName) {
         const action      = newStatus === 'true' ? 'activate' : 'deactivate';
         const actionColor = newStatus === 'true' ? 'green'    : 'red';
-        document.getElementById('confirmTitle').textContent = action.charAt(0).toUpperCase() + action.slice(1) + ' User';
-        document.getElementById('confirmMessage').innerHTML = `Are you sure you want to <strong style="color:${actionColor}">${action}</strong> <strong>${userName}</strong>?`;
+        document.getElementById('confirmTitle').textContent   = action.charAt(0).toUpperCase() + action.slice(1) + ' User';
+        document.getElementById('confirmMessage').innerHTML   = `Are you sure you want to <strong style="color:${actionColor}">${action}</strong> <strong>${userName}</strong>?`;
         document.getElementById('confirmModal').classList.add('show');
         pendingToggle = { type, id, newStatus };
     }
@@ -668,9 +663,9 @@ unset($s);
     });
 
     function searchTable(type) {
-        const input     = document.getElementById(type + 'Search');
-        const filter    = input.value.toLowerCase();
-        const clearBtn  = document.getElementById('clear' + type.charAt(0).toUpperCase() + type.slice(1) + 'Search');
+        const input    = document.getElementById(type + 'Search');
+        const filter   = input.value.toLowerCase();
+        const clearBtn = document.getElementById('clear' + type.charAt(0).toUpperCase() + type.slice(1) + 'Search');
         clearBtn.classList.toggle('show', filter.length > 0);
         if (type === 'student') applyStudentFilters();
         else if (type === 'advisor') applyAdvisorFilters();
@@ -710,8 +705,7 @@ unset($s);
             row.classList.toggle('hidden', !(matchSearch && matchProgram && matchGroup));
         });
 
-        const activeSort = nameDir || idDir;
-        if (activeSort) {
+        if (nameDir || idDir) {
             const visibleRows = rows.filter(r => !r.classList.contains('hidden'));
             visibleRows.sort((a, b) => {
                 if (nameDir) {
@@ -754,14 +748,13 @@ unset($s);
         let rows    = Array.from(tbody.querySelectorAll('tr'));
 
         rows.forEach(row => {
-            const rowName = row.dataset.name       || '';
-            const rowId   = row.dataset.advisorId  || '';
+            const rowName = row.dataset.name      || '';
+            const rowId   = row.dataset.advisorId || '';
             const matchSearch = !search || rowName.includes(search) || rowId.includes(search);
             row.classList.toggle('hidden', !matchSearch);
         });
 
-        const activeSort = nameDir || idDir;
-        if (activeSort) {
+        if (nameDir || idDir) {
             const visibleRows = rows.filter(r => !r.classList.contains('hidden'));
             visibleRows.sort((a, b) => {
                 if (nameDir) {
@@ -787,9 +780,9 @@ unset($s);
     }
 
     function clearAdvisorFilters() {
-        document.getElementById('advisorSearch').value       = '';
-        document.getElementById('filterAdvisorName').value   = '';
-        document.getElementById('filterAdvisorId').value     = '';
+        document.getElementById('advisorSearch').value      = '';
+        document.getElementById('filterAdvisorName').value  = '';
+        document.getElementById('filterAdvisorId').value    = '';
         applyAdvisorFilters();
     }
 

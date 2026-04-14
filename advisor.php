@@ -1,12 +1,10 @@
-<!-- advisor.php -->
 <?php
 session_start();
 include("connect.php");
 include('php/get_setting.php');
 include("check_session.php");
-// Check maintenance mode (only coordinators/admins can access)
+
 if (getSettingBool($con, 'maintenance_mode', false)) {
-    // Allow coordinators to access
     if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'coordinator') {
         ?>
         <!DOCTYPE html>
@@ -30,21 +28,19 @@ if (getSettingBool($con, 'maintenance_mode', false)) {
         exit;
     }
 }
-include('check_session.php');
+
 if (!isset($_SESSION['submit'])) {
     header('Location: home.php');
     exit;
 }
 
-// Get advisor ID from session
-$advisorId = $_SESSION['id'];
+$advisorUserId = $_SESSION['id'];
 
-// Fetch notifications for the current user
 $notificationsStmt = $con->prepare("
     SELECT id, title, message, priority, created_at, status
     FROM system_notifications
     WHERE (
-        recipient_type = 'all' 
+        recipient_type = 'all'
         OR recipient_type = 'advisors'
         OR (recipient_type = 'specific' AND recipient_id = :user_id)
     )
@@ -52,63 +48,42 @@ $notificationsStmt = $con->prepare("
     ORDER BY created_at DESC
     LIMIT 10
 ");
-$notificationsStmt->execute([
-    'user_id' => $_SESSION['id']
-]);
+$notificationsStmt->execute(['user_id' => $advisorUserId]);
 $notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Count unread notifications
 $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
-// Fetch all groups assigned to this advisor (for stats only)
-$groupsStmt = $con->prepare("
-    SELECT g.id as group_id, g.name as group_name
-    FROM groups g
-    WHERE g.adviser_id = :adviser_id
-    ORDER BY g.name
-");
-$groupsStmt->execute(['adviser_id' => $advisorId]);
-$assignedGroups = $groupsStmt->fetchAll(PDO::FETCH_ASSOC);
+$facultyStmt = $con->prepare("SELECT id FROM faculties WHERE user_id = :user_id");
+$facultyStmt->execute(['user_id' => $advisorUserId]);
+$faculty = $facultyStmt->fetch(PDO::FETCH_ASSOC);
+$facultyId = $faculty['id'] ?? null;
 
-// Calculate stats for dashboard
-$totalGroups = count($assignedGroups);
-$activeLeaders = 0;
+$totalGroups      = 0;
+$activeLeaders    = 0;
 $totalSubmissions = 0;
 
-foreach ($assignedGroups as $g) {
-    $groupId = $g['group_id'];
-    
-    // Check if group has a leader
-    $leaderStmt = $con->prepare("
-        SELECT COUNT(*) as count
-        FROM student
-        WHERE group_id = :group_id AND is_leader = TRUE
+if ($facultyId) {
+    $groupsStmt = $con->prepare("
+        SELECT g.id as group_id
+        FROM groups g
+        WHERE g.adviser_id = :adviser_id
     ");
-    $leaderStmt->execute(['group_id' => $groupId]);
-    $leaderCount = $leaderStmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($leaderCount['count'] > 0) {
-        $activeLeaders++;
-        
-        // Count submissions for this group's leader
-        $leaderIdStmt = $con->prepare("
-            SELECT school_id
-            FROM student
+    $groupsStmt->execute(['adviser_id' => $facultyId]);
+    $assignedGroups = $groupsStmt->fetchAll(PDO::FETCH_ASSOC);
+    $totalGroups = count($assignedGroups);
+
+    foreach ($assignedGroups as $g) {
+        $groupId = $g['group_id'];
+
+        $leaderStmt = $con->prepare("
+            SELECT COUNT(*) as count
+            FROM student_groups
             WHERE group_id = :group_id AND is_leader = TRUE
-            LIMIT 1
         ");
-        $leaderIdStmt->execute(['group_id' => $groupId]);
-        $leader = $leaderIdStmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($leader) {
-            $uploadsStmt = $con->prepare("
-                SELECT COUNT(DISTINCT task_name) as count
-                FROM uploads 
-                WHERE school_id = :school_id
-            ");
-            $uploadsStmt->execute(['school_id' => $leader['school_id']]);
-            $uploads = $uploadsStmt->fetch(PDO::FETCH_ASSOC);
-            $totalSubmissions += $uploads['count'];
+        $leaderStmt->execute(['group_id' => $groupId]);
+        $leaderCount = $leaderStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($leaderCount['count'] > 0) {
+            $activeLeaders++;
         }
     }
 }
@@ -129,7 +104,6 @@ foreach ($assignedGroups as $g) {
 <body>
 <?php include("templates/aside_advisor.html"); ?>
 <main class="main-content">
-    <!-- Dashboard Header -->
     <div class="dashboard-header">
         <div class="header-content">
             <div class="header-text">
@@ -145,7 +119,6 @@ foreach ($assignedGroups as $g) {
         </div>
     </div>
 
-    <!-- Quick Stats Section -->
     <?php if ($totalGroups > 0): ?>
         <div class="stats-container">
             <div class="stats-summary clean-stats">
@@ -158,7 +131,6 @@ foreach ($assignedGroups as $g) {
                         <div class="stat-label">Assigned Groups</div>
                     </div>
                 </div>
-
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="ri-user-star-line" style="color: white;"></i>
@@ -168,7 +140,6 @@ foreach ($assignedGroups as $g) {
                         <div class="stat-label">Active Leaders</div>
                     </div>
                 </div>
-
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="ri-file-list-3-line" style="color: white;"></i>
@@ -181,8 +152,7 @@ foreach ($assignedGroups as $g) {
             </div>
         </div>
     <?php endif; ?>
-    
-    <!-- Analytics Section -->
+
     <div class="analytics-section">
         <div class="chart-container">
             <div class="chart-header">
@@ -190,29 +160,19 @@ foreach ($assignedGroups as $g) {
                 <p class="chart-subtitle">Track group performance over time</p>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/advisor-BM-cpvB-.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/advisor-C9E8YwLT.js" defer></script>
         </div>
     </div>
-    
+
     <div style="height: 50px;" class="space"></div>
 </main>
 
 <script>
-// Display current date
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
-document.getElementById('currentDate').textContent = currentDate;
-
- const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', dateOptions);
+const SESSION_TIMEOUT_MINUTES = <?= getSettingInt($con, 'session_timeout', 30) ?>;
 </script>
-
 <script src="js/timeout.js"></script>
-<!-- <script>
-// Display current date
-const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
-document.getElementById('currentDate').textContent = currentDate;
-</script> -->
 <script src="js/notifications.js"></script>
 <script src="js/session_monitor.js"></script>
 </body>

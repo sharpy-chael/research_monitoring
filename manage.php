@@ -13,43 +13,71 @@ $groupStmt = $con->query("SELECT * FROM groups ORDER BY name");
 $allGroups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($allGroups as $g) {
-    $groupId     = $g['id'];
-    $groupName   = $g['name'];
+    $groupId       = $g['id'];
+    $groupName     = $g['name'];
     $researchTitle = $g['research_title'] ?? null;
     $titleStatus   = $g['title_status'] ?? 'missing';
 
     $memberStmt = $con->prepare("
-        SELECT id, COALESCE(NULLIF(TRIM(full_name), ''), TRIM(firstname || ' ' || middlename || ' ' || lastname)) AS name
-        FROM student
-        WHERE group_id = :group_id AND (is_leader IS NULL OR is_leader = FALSE)
-        ORDER BY full_name
+        SELECT s.id,
+               TRIM(COALESCE(s.firstname, '') || ' ' || COALESCE(s.middlename, '') || ' ' || COALESCE(s.lastname, '')) AS name
+        FROM students s
+        JOIN student_groups sg ON s.id = sg.student_id
+        WHERE sg.group_id = :group_id AND (sg.is_leader IS NULL OR sg.is_leader = FALSE)
+        ORDER BY s.firstname
     ");
     $memberStmt->execute(['group_id' => $groupId]);
     $members = $memberStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $leaderStmt = $con->prepare("
-        SELECT COALESCE(NULLIF(TRIM(full_name), ''), TRIM(firstname || ' ' || middlename || ' ' || lastname))
-        FROM student
-        WHERE group_id = :group_id AND is_leader = TRUE
+        SELECT TRIM(COALESCE(s.firstname, '') || ' ' || COALESCE(s.middlename, '') || ' ' || COALESCE(s.lastname, '')) AS name
+        FROM students s
+        JOIN student_groups sg ON s.id = sg.student_id
+        WHERE sg.group_id = :group_id AND sg.is_leader = TRUE
         LIMIT 1
     ");
     $leaderStmt->execute(['group_id' => $groupId]);
     $leader = $leaderStmt->fetchColumn();
 
-    $adviserStmt = $con->prepare("SELECT a.name FROM advisor a JOIN groups g ON a.advisor_id = CAST(g.advisor_id AS VARCHAR) WHERE g.id = :group_id");
-    $adviserStmt->execute(['group_id' => $groupId]);
+    $adviserStmt = $con->prepare("
+        SELECT u.username
+        FROM faculties f
+        JOIN users u ON f.user_id = u.id
+        WHERE f.id = :adviser_id
+        LIMIT 1
+    ");
+    $adviserStmt->execute(['adviser_id' => $g['adviser_id'] ?? 0]);
     $adviser = $adviserStmt->fetchColumn();
 
-    $programStmt = $con->prepare("SELECT program FROM student WHERE group_id = :group_id LIMIT 1");
+    $programStmt = $con->prepare("
+        SELECT p.code
+        FROM students s
+        JOIN student_groups sg ON s.id = sg.student_id
+        JOIN programs p ON s.program_id = p.id
+        WHERE sg.group_id = :group_id
+        LIMIT 1
+    ");
     $programStmt->execute(['group_id' => $groupId]);
     $program = $programStmt->fetchColumn() ?: '';
 
-    $sdgStmt = $con->prepare("SELECT us.id, us.name FROM un_sdgs us JOIN group_sdgs gs ON us.id = gs.sdg_id WHERE gs.group_id = :group_id ORDER BY us.name");
-    $sdgStmt->execute(['group_id' => $groupId]);
+    $sdgStmt = $con->prepare("
+        SELECT sd.id, sd.name
+        FROM sdgs sd
+        JOIN thrusts_assignments ta ON sd.id = ta.sdg_id
+        WHERE ta.research_id = :research_id
+        ORDER BY sd.name
+    ");
+    $sdgStmt->execute(['research_id' => $g['research_id'] ?? 0]);
     $assignedSdgs = $sdgStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $thrustStmt = $con->prepare("SELECT rt.id, rt.name FROM research_thrusts rt JOIN group_thrusts gt ON rt.id = gt.thrust_id WHERE gt.group_id = :group_id ORDER BY rt.name");
-    $thrustStmt->execute(['group_id' => $groupId]);
+    $thrustStmt = $con->prepare("
+        SELECT t.id, t.name
+        FROM thrusts t
+        JOIN thrusts_assignments ta ON t.id = ta.thrust_id
+        WHERE ta.research_id = :research_id
+        ORDER BY t.name
+    ");
+    $thrustStmt->execute(['research_id' => $g['research_id'] ?? 0]);
     $assignedThrusts = $thrustStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $groups[] = [
@@ -66,8 +94,8 @@ foreach ($allGroups as $g) {
     ];
 }
 
-$allSdgs    = $con->query("SELECT * FROM un_sdgs ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-$allThrusts = $con->query("SELECT * FROM research_thrusts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$allSdgs    = $con->query("SELECT * FROM sdgs ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$allThrusts = $con->query("SELECT * FROM thrusts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 
 $adviserNames = array_unique(array_filter(array_column($groups, 'adviser')));
 sort($adviserNames);
@@ -102,293 +130,49 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
 @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
 .toast-notification.removing{animation:slideOut .3s ease-in}
 @keyframes slideOut{from{transform:translateX(0);opacity:1}to{transform:translateX(400px);opacity:0}}
-
-.manage-section {
-    background: #fff;
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.07);
-}
-
-.manage-section-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.manage-section-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-}
-
-.manage-section-icon.sdg-icon {
-    background: #e3f2fd;
-    color: #1a56db;
-}
-
-.manage-section-icon.thrust-icon {
-    background: #fff3e0;
-    color: #d97706;
-}
-
-.manage-section-title h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0 0 4px;
-    color: #1f2937;
-}
-
-.manage-section-title p {
-    font-size: 13px;
-    color: #6b7280;
-    margin: 0;
-}
-
-.items-list {
-    margin-bottom: 20px;
-}
-
-.item-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.item-row:last-child {
-    border-bottom: none;
-}
-
-.item-number {
-    font-size: 12px;
-    font-weight: 600;
-    color: #9ca3af;
-    min-width: 24px;
-}
-
-.item-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.item-dot.sdg-dot {
-    background: #1a56db;
-}
-
-.item-dot.thrust-dot {
-    background: #d97706;
-}
-
-.item-name {
-    flex: 1;
-    font-size: 14px;
-    color: #1f2937;
-    font-weight: 500;
-}
-
-.item-delete {
-    cursor: pointer;
-    color: #dc3545;
-    font-size: 16px;
-    opacity: 0;
-    transition: opacity .2s, color .2s;
-}
-
-.item-row:hover .item-delete {
-    opacity: 1;
-}
-
-.item-delete:hover {
-    color: #a71d2a;
-}
-
-.add-item-form {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px solid #f3f4f6;
-}
-
-.add-item-form input {
-    flex: 1;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color .2s;
-}
-
-.add-item-form input:focus {
-    outline: none;
-    border-color: #1a56db;
-}
-
-.add-item-form button {
-    padding: 10px 20px;
-    background: #1a56db;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    transition: background .2s;
-}
-
-.add-item-form button:hover {
-    background: #1648c0;
-}
-
-.add-item-form button.thrust-btn {
-    background: #d97706;
-}
-
-.add-item-form button.thrust-btn:hover {
-    background: #b45309;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #9ca3af;
-}
-
-.empty-state i {
-    font-size: 48px;
-    margin-bottom: 12px;
-    opacity: 0.5;
-}
-
-.empty-state p {
-    font-size: 14px;
-    margin: 0;
-}
-
-.sdg-thrust-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-    gap: 20px;
-}
-
-.confirm-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-}
-
-.confirm-modal.active {
-    display: flex;
-}
-
-.confirm-modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.confirm-modal-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.confirm-modal-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #fee;
-    color: #dc3545;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-}
-
-.confirm-modal-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-}
-
-.confirm-modal-message {
-    font-size: 14px;
-    color: #6b7280;
-    margin: 0 0 24px;
-    line-height: 1.5;
-}
-
-.confirm-modal-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.confirm-modal-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.confirm-modal-btn.cancel {
-    background: #f3f4f6;
-    color: #374151;
-}
-
-.confirm-modal-btn.cancel:hover {
-    background: #e5e7eb;
-}
-
-.confirm-modal-btn.confirm {
-    background: #dc3545;
-    color: white;
-}
-
-.confirm-modal-btn.confirm:hover {
-    background: #c82333;
-}
+.manage-section{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.manage-section-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.manage-section-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.manage-section-icon.sdg-icon{background:#e3f2fd;color:#1a56db}
+.manage-section-icon.thrust-icon{background:#fff3e0;color:#d97706}
+.manage-section-title h3{font-size:18px;font-weight:700;margin:0 0 4px;color:#1f2937}
+.manage-section-title p{font-size:13px;color:#6b7280;margin:0}
+.items-list{margin-bottom:20px}
+.item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6}
+.item-row:last-child{border-bottom:none}
+.item-number{font-size:12px;font-weight:600;color:#9ca3af;min-width:24px}
+.item-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.item-dot.sdg-dot{background:#1a56db}
+.item-dot.thrust-dot{background:#d97706}
+.item-name{flex:1;font-size:14px;color:#1f2937;font-weight:500}
+.item-delete{cursor:pointer;color:#dc3545;font-size:16px;opacity:0;transition:opacity .2s,color .2s}
+.item-row:hover .item-delete{opacity:1}
+.item-delete:hover{color:#a71d2a}
+.add-item-form{display:flex;gap:8px;align-items:center;padding-top:12px;border-top:1px solid #f3f4f6}
+.add-item-form input{flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;transition:border-color .2s}
+.add-item-form input:focus{outline:none;border-color:#1a56db}
+.add-item-form button{padding:10px 20px;background:#1a56db;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:background .2s}
+.add-item-form button:hover{background:#1648c0}
+.add-item-form button.thrust-btn{background:#d97706}
+.add-item-form button.thrust-btn:hover{background:#b45309}
+.empty-state{text-align:center;padding:40px 20px;color:#9ca3af}
+.empty-state i{font-size:48px;margin-bottom:12px;opacity:0.5}
+.empty-state p{font-size:14px;margin:0}
+.sdg-thrust-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:20px}
+.confirm-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center}
+.confirm-modal.active{display:flex}
+.confirm-modal-content{background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:modalSlideIn 0.3s ease-out}
+@keyframes modalSlideIn{from{transform:translateY(-50px);opacity:0}to{transform:translateY(0);opacity:1}}
+.confirm-modal-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.confirm-modal-icon{width:48px;height:48px;border-radius:50%;background:#fee;color:#dc3545;display:flex;align-items:center;justify-content:center;font-size:24px}
+.confirm-modal-title{font-size:18px;font-weight:700;color:#1f2937;margin:0}
+.confirm-modal-message{font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.5}
+.confirm-modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.confirm-modal-btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.confirm-modal-btn.cancel{background:#f3f4f6;color:#374151}
+.confirm-modal-btn.cancel:hover{background:#e5e7eb}
+.confirm-modal-btn.confirm{background:#dc3545;color:white}
+.confirm-modal-btn.confirm:hover{background:#c82333}
 </style>
 </head>
 <body>
@@ -436,7 +220,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                         <p><?= count($allSdgs) ?> SDG<?= count($allSdgs) !== 1 ? 's' : '' ?> · Managed by Advisors</p>
                     </div>
                 </div>
-
                 <div class="items-list" id="sdgList">
                     <?php if (empty($allSdgs)): ?>
                         <div class="empty-state">
@@ -454,7 +237,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-
                 <div class="add-item-form">
                     <input type="text" id="newSdgName" placeholder="Enter new UN SDG name..." onkeydown="if(event.key==='Enter') addItem('sdg')">
                     <button onclick="addItem('sdg')"><i class="ri-add-line"></i> Add SDG</button>
@@ -471,7 +253,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                         <p><?= count($allThrusts) ?> Thrust<?= count($allThrusts) !== 1 ? 's' : '' ?> · Managed by Advisors</p>
                     </div>
                 </div>
-
                 <div class="items-list" id="thrustList">
                     <?php if (empty($allThrusts)): ?>
                         <div class="empty-state">
@@ -489,7 +270,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-
                 <div class="add-item-form">
                     <input type="text" id="newThrustName" placeholder="Enter new Research Thrust name..." onkeydown="if(event.key==='Enter') addItem('thrust')">
                     <button class="thrust-btn" onclick="addItem('thrust')"><i class="ri-add-line"></i> Add Thrust</button>
@@ -500,7 +280,6 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
     </div>
 
     <div class="rm-panel" id="panel-groups">
-
         <div class="groups-toolbar">
             <div class="groups-search">
                 <i class="ri-search-line"></i>
@@ -574,7 +353,7 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                                             <div style="flex:1;"><b>Research Title:</b> <?= htmlspecialchars($grp['research_title']) ?></div>
                                             <?php
                                             $sc = 'status-missing'; $st = 'Missing';
-                                            if ($grp['title_status'] === 'pending')   { $sc = 'status-pending';  $st = 'Pending'; }
+                                            if ($grp['title_status'] === 'pending')    { $sc = 'status-pending';  $st = 'Pending'; }
                                             elseif ($grp['title_status'] === 'approved') { $sc = 'status-approved'; $st = 'Approved'; }
                                             elseif ($grp['title_status'] === 'rejected') { $sc = 'status-rejected'; $st = 'Rejected'; }
                                             ?>
@@ -630,17 +409,19 @@ $unreadCount = count(array_filter($notifications, fn($n) => $n['status'] === 'se
                 </div>
             </div>
         </div>
-
     </div>
+    <button id="aiChatButton">AI Chat</button>
+        <div id="aiChatbox">
+            <iframe src="http://172.20.10.2:5000" frameborder="0"></iframe>
+        </div>
+    <div style="height:50px;" class="space"></div>
     <div class="space"></div>
 </main>
 
 <div class="confirm-modal" id="confirmModal">
     <div class="confirm-modal-content">
         <div class="confirm-modal-header">
-            <div class="confirm-modal-icon">
-                <i class="ri-error-warning-line"></i>
-            </div>
+            <div class="confirm-modal-icon"><i class="ri-error-warning-line"></i></div>
             <h3 class="confirm-modal-title">Confirm Deletion</h3>
         </div>
         <p class="confirm-modal-message" id="confirmMessage"></p>
@@ -765,7 +546,7 @@ function toggleMembers(icon) {
 
 async function addItem(type) {
     const inputId = type === 'sdg' ? 'newSdgName' : 'newThrustName';
-    const listId  = type === 'sdg' ? 'sdgList'   : 'thrustList';
+    const listId  = type === 'sdg' ? 'sdgList'    : 'thrustList';
     const name = document.getElementById(inputId).value.trim();
     if (!name) { showToast('Name cannot be empty.', 'error'); return; }
     try {
@@ -868,7 +649,19 @@ function updateTabBadge() {
     const badge = document.querySelector('[data-tab="sdg-thrusts"] .tab-badge');
     if (badge) badge.textContent = sdgCount + thrustCount;
 }
-</script>
+document.getElementById('aiChatButton').addEventListener('click', function () {
+    const box = document.getElementById('aiChatbox');
+    box.classList.toggle('open');
+});
+ 
 
+document.addEventListener('click', function (e) {
+    const box    = document.getElementById('aiChatbox');
+    const button = document.getElementById('aiChatButton');
+    if (box.classList.contains('open') && !box.contains(e.target) && !button.contains(e.target)) {
+        box.classList.remove('open');
+    }
+});
+</script>
 </body>
 </html>

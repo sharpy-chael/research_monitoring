@@ -1,7 +1,4 @@
-/**
- * Notifications JavaScript
- * Handles marking notifications as read
- */
+
 
 async function markAsRead(notificationId) {
     try {
@@ -18,10 +15,9 @@ async function markAsRead(notificationId) {
         const data = await response.json();
         
         if (data.success) {
-            // Option 1: Reload the page to show updated status
             location.reload();
             
-            // Option 2: Update UI without reload (uncomment if you prefer this)
+           
             /*
             const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
             if (card) {

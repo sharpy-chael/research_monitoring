@@ -11,7 +11,7 @@ function AppCoordinator() {
 
   const fetchData = async (program = 'all', advisor = 'all') => {
     try {
-      const res = await fetch(`/research_monitoring/data/get_coordinator_data.php?program=${program}&advisor=${advisor}`);
+      const res = await fetch(`/research_monitoring_system/data/get_coordinator_data.php?program=${program}&advisor=${advisor}`);
       const data = await res.json();
       
       setChartData(data);

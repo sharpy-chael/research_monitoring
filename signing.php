@@ -1,19 +1,19 @@
 <?php
 session_start();
-include("connect.php"); 
+include("connect.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
-    $name = $_POST['name'];
-    $advisorId = trim($_POST['advisor_id']);
-    $password = $_POST['passw'];
+    $name      = trim($_POST['name']      ?? '');
+    $advisorId = trim($_POST['advisor_id'] ?? '');
+    $password  = $_POST['passw'];
 
-    if (empty($advisorId)) {
-        $_SESSION['error_message'] = "Advisor ID is required";
+    if (empty($name) || empty($advisorId)) {
+        $_SESSION['error_message'] = "Name and Advisor ID are required.";
         header("Location: signing.php");
         exit();
     }
 
-    $checkStmt = $con->prepare("SELECT advisor_id FROM advisor WHERE advisor_id = :advisor_id");
+    $checkStmt = $con->prepare("SELECT id FROM faculties WHERE email = :advisor_id");
     $checkStmt->execute(['advisor_id' => $advisorId]);
     if ($checkStmt->fetch()) {
         $_SESSION['error_message'] = "Advisor ID already exists. Please use a different ID.";
@@ -21,28 +21,51 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
         exit();
     }
 
-    $number = preg_match('@[0-9]@', $password);
-    $rules = strlen($password) >= 8 && $number;
+    $checkUser = $con->prepare("SELECT id FROM users WHERE username = :username");
+    $checkUser->execute(['username' => $advisorId]);
+    if ($checkUser->fetch()) {
+        $_SESSION['error_message'] = "Advisor ID already exists. Please use a different ID.";
+        header("Location: signing.php");
+        exit();
+    }
 
-    if (!$rules) {
+    $number = preg_match('@[0-9]@', $password);
+    if (strlen($password) < 8 || !$number) {
         $_SESSION['error_message'] = "The password should be valid";
         header("Location: signing.php");
         exit();
     }
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $con->prepare("INSERT INTO advisor (name, advisor_id, pass_word) VALUES (:name, :advisor_id, :password)");
 
     try {
-        $stmt->execute([
-            'name' => $name,
-            'advisor_id' => $advisorId,
+        $con->beginTransaction();
+
+        $userStmt = $con->prepare("
+            INSERT INTO users (username, pass_word, role, is_active)
+            VALUES (:username, :password, 'advisor', TRUE)
+        ");
+        $userStmt->execute([
+            'username' => $advisorId,
             'password' => $hashed_password
         ]);
+        $user_id = $con->lastInsertId();
+
+        $facultyStmt = $con->prepare("
+            INSERT INTO faculties (user_id, name)
+            VALUES (:user_id, :name)
+        ");
+        $facultyStmt->execute([
+            'user_id' => $user_id,
+            'name'    => $name
+        ]);
+
+        $con->commit();
         $_SESSION['success_message'] = "Account created successfully!";
         header("Location: signing.php");
         exit();
     } catch (PDOException $e) {
+        $con->rollBack();
         $_SESSION['error_message'] = "Error creating account: " . $e->getMessage();
         header("Location: signing.php");
         exit();
@@ -87,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                     <input type="password" name="passw" placeholder="Password" required>
                 </div>
                 <div class="submit-btn">
-                    <input type="submit" name="submit" value="Create Account" required>
+                    <input type="submit" name="submit" value="Create Account">
                 </div>
                 <div class="a">
                     <p class="login-link">Go back to <a href="loginn.php">Log In</a></p>

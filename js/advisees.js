@@ -497,7 +497,7 @@ async function submitMilestoneAction(status) {
         const response = await fetch('advisees.php', { method: 'POST', body: formData });
         const data = await response.json();
         if (data.success) {
-            showToast(`Milestone ${status === 'completed' ? 'approved' : 'rejected'} successfully!`, 'success');
+            showToast(`Milestone ${status === 'endorsed' ? 'endorsed' : 'rejected'} successfully!`, 'success');
             closeMilestoneActionModal();
             setTimeout(() => location.reload(), 800);
         } else {
@@ -548,3 +548,18 @@ document.addEventListener('keydown', (e) => {
         if (modal && modal.classList.contains('show')) closePreviewModal();
     }
 });
+
+document.getElementById('aiChatButton').addEventListener('click', function () {
+    const box = document.getElementById('aiChatbox');
+    box.classList.toggle('open');
+});
+ 
+
+document.addEventListener('click', function (e) {
+    const box    = document.getElementById('aiChatbox');
+    const button = document.getElementById('aiChatButton');
+    if (box.classList.contains('open') && !box.contains(e.target) && !button.contains(e.target)) {
+        box.classList.remove('open');
+    }
+});
+

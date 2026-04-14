@@ -28,10 +28,8 @@ $_SESSION['last_activity'] = time();
 
 try {
     $ayStmt = $con->prepare("
-        SELECT year_start, year_end
-        FROM academic_years
-        WHERE is_active = true
-          AND CURRENT_DATE BETWEEN year_start AND year_end
+        SELECT year_start, year_end FROM academic_years
+        WHERE is_active = true AND CURRENT_DATE BETWEEN year_start AND year_end
         LIMIT 1
     ");
     $ayStmt->execute();
@@ -39,20 +37,15 @@ try {
 
     if (!$activeAY) {
         $latestAY = $con->query("
-            SELECT year_start, year_end
-            FROM academic_years
-            ORDER BY year_end DESC
-            LIMIT 1
+            SELECT year_start, year_end FROM academic_years ORDER BY year_end DESC LIMIT 1
         ")->fetch(PDO::FETCH_ASSOC);
 
         $yearLabel = $latestAY
-            ? "Academic Year " . date('Y', strtotime($latestAY['year_start']))
-              . "–" . date('Y', strtotime($latestAY['year_end']))
+            ? "Academic Year " . date('Y', strtotime($latestAY['year_start'])) . "–" . date('Y', strtotime($latestAY['year_end']))
             : "the current academic year";
 
         include('php/log_helper.php');
-        logActivity($con, $_SESSION['id'], $_SESSION['role'], 'session_ended',
-            $_SESSION['name'] . ' session ended — academic year inactive or expired');
+        logActivity($con, $_SESSION['id'], $_SESSION['role'], 'session_ended', $_SESSION['name'] . ' session ended — academic year inactive or expired');
 
         session_unset();
         session_destroy();
@@ -61,11 +54,8 @@ try {
         header('Location: login.php');
         exit;
     }
-} catch (PDOException $e) {
-    // If academic_years table doesn't exist, continue normally
-}
+} catch (PDOException $e) {}
 
-// ── Maintenance mode ──────────────────────────────────────────────────────────
 if (getSettingBool($con, 'maintenance_mode', false)) {
     ?>
     <!DOCTYPE html>
@@ -89,7 +79,6 @@ if (getSettingBool($con, 'maintenance_mode', false)) {
     exit;
 }
 
-// ── Notifications ─────────────────────────────────────────────────────────────
 $notificationsStmt = $con->prepare("
     SELECT id, title, message, priority, created_at, status
     FROM system_notifications
@@ -106,107 +95,108 @@ $notificationsStmt->execute(['user_id' => $_SESSION['id']]);
 $notifications = $notificationsStmt->fetchAll(PDO::FETCH_ASSOC);
 $unreadCount   = count(array_filter($notifications, fn($n) => $n['status'] === 'sent'));
 
-// ── Student / group data ──────────────────────────────────────────────────────
-$stmt = $con->prepare("
-    SELECT s.group_id, s.is_leader, g.research_title, g.title_status
-    FROM student s
-    LEFT JOIN groups g ON s.group_id = g.id
-    WHERE s.school_id = :school_id
-");
-$stmt->execute(['school_id' => $school_id]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
+$studentStmt = $con->prepare("SELECT id FROM students WHERE school_id = :school_id LIMIT 1");
+$studentStmt->execute(['school_id' => $school_id]);
+$studentRow = $studentStmt->fetch(PDO::FETCH_ASSOC);
+$studentId  = $studentRow['id'] ?? null;
 
-$group_id    = $user['group_id'];
-$is_leader   = $user['is_leader'];
-$groupTitle  = $user['research_title'] ?? '';
-$titleStatus = $user['title_status']   ?? 'missing';
+$allGroups = [];
+if ($studentId) {
+    $sgStmt = $con->prepare("
+        SELECT sg.group_id, sg.is_leader, g.name AS group_name,
+               g.research_title, g.title_status, g.research_id
+        FROM student_groups sg
+        JOIN groups g ON sg.group_id = g.id
+        WHERE sg.student_id = :student_id
+        ORDER BY sg.id ASC
+    ");
+    $sgStmt->execute(['student_id' => $studentId]);
+    $allGroups = $sgStmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
-$_SESSION['research_title'] = $groupTitle;
+$firstGroup = $allGroups[0] ?? null;
+$_SESSION['research_title'] = $firstGroup['research_title'] ?? '';
 
-// ── Progress calculation (10 requirements total) ──────────────────────────────
-// Requirements:
-// 1.  Title approved
-// 2.  Proposal
-// 3.  UREC Form
-// 4.  UREC Clearance
-// 5.  Final Defense
-// 6.  Applied for Copyright
-// 7.  Research Presented
-// 8.  Research Published
-// 9.  Copyright Approved
-// 10. Full Manuscript upload (at least one approved)
+$REQUIRED_TOTAL = 6;
 
-$approvedCount = 0;
+$groupProgressMap = [];
 
-// -- Full Manuscript (uploads) — counts as 1 if ANY upload is approved ---------
-$progressStmt = $con->prepare("
-    SELECT task_name, status
-    FROM uploads
-    WHERE school_id IN (SELECT school_id FROM student WHERE group_id = :group_id)
-    ORDER BY uploaded_at DESC
-");
-$progressStmt->execute(['group_id' => $group_id]);
-$allUploads = $progressStmt->fetchAll(PDO::FETCH_ASSOC);
+foreach ($allGroups as $grp) {
+    $gid   = $grp['group_id'];
+    $rid   = $grp['research_id'];
+    $count = 0;
 
-$uploadMap = [];
-foreach ($allUploads as $upload) {
-    if (!isset($uploadMap[$upload['task_name']])) {
-        $uploadMap[$upload['task_name']] = $upload;
+    $msStmt = $con->prepare("
+        SELECT g.title_status,
+               gm.proposal_status, gm.final_defense_status, gm.hardbound_submitted_status
+        FROM groups g
+        LEFT JOIN group_milestones gm ON g.id = gm.group_id
+        WHERE g.id = :group_id
+    ");
+    $msStmt->execute(['group_id' => $gid]);
+    $ms = $msStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($ms) {
+        if (($ms['title_status']               ?? '') === 'approved')  $count++;
+        if (($ms['proposal_status']            ?? '') === 'completed') $count++;
+        if (($ms['final_defense_status']       ?? '') === 'completed') $count++;
+        if (($ms['hardbound_submitted_status'] ?? '') === 'completed') $count++;
     }
-}
 
-foreach ($uploadMap as $upload) {
-    if ($upload['status'] === 'approved') {
-        $approvedCount++;
-        break; // manuscript is 1 requirement regardless of how many tasks
+    if ($rid) {
+        $urecStmt = $con->prepare("
+            SELECT document_type, status FROM urec_documents
+            WHERE research_id = :research_id ORDER BY uploaded_at DESC
+        ");
+        $urecStmt->execute(['research_id' => $rid]);
+        $urecMap = [];
+        foreach ($urecStmt->fetchAll(PDO::FETCH_ASSOC) as $doc) {
+            if (!isset($urecMap[$doc['document_type']])) $urecMap[$doc['document_type']] = $doc;
+        }
+        if (isset($urecMap['UREC Form'])      && $urecMap['UREC Form']['status']      === 'approved') $count++;
+        if (isset($urecMap['UREC Clearance']) && $urecMap['UREC Clearance']['status'] === 'approved') $count++;
     }
+
+    $groupProgressMap[$gid] = [
+        'count'   => $count,
+        'percent' => round(($count / $REQUIRED_TOTAL) * 100),
+    ];
 }
 
-// -- Milestones (7 items) + UREC (2 items) = 9 --------------------------------
-$milestoneStmt = $con->prepare("
-    SELECT
-        g.title_status,
-        gm.proposal_status,
-        gm.final_defense_status,
-        gm.applied_copyright_status,
-        gm.research_presented_status,
-        gm.research_published_status,
-        gm.copyright_approved_status
-    FROM groups g
-    LEFT JOIN group_milestones gm ON g.id = gm.group_id
-    WHERE g.id = :group_id
-");
-$milestoneStmt->execute(['group_id' => $group_id]);
-$milestones = $milestoneStmt->fetch(PDO::FETCH_ASSOC);
+$firstGroupId       = $firstGroup['group_id'] ?? null;
+$approvedCount      = $firstGroupId ? ($groupProgressMap[$firstGroupId]['count']   ?? 0) : 0;
+$progressPercentage = $firstGroupId ? ($groupProgressMap[$firstGroupId]['percent'] ?? 0) : 0;
 
-if ($milestones) {
-    if (($milestones['title_status']              ?? '') === 'approved')  $approvedCount++;
-    if (($milestones['proposal_status']           ?? '') === 'completed') $approvedCount++;
-    if (($milestones['final_defense_status']      ?? '') === 'completed') $approvedCount++;
-    if (($milestones['applied_copyright_status']  ?? '') === 'completed') $approvedCount++;
-    if (($milestones['research_presented_status'] ?? '') === 'completed') $approvedCount++;
-    if (($milestones['research_published_status'] ?? '') === 'completed') $approvedCount++;
-    if (($milestones['copyright_approved_status'] ?? '') === 'completed') $approvedCount++;
+$groupMembersData = [];
+foreach ($allGroups as $grp) {
+    $gid = $grp['group_id'];
+
+    $leaderStmt = $con->prepare("
+        SELECT TRIM(COALESCE(s.firstname,'') || ' ' || COALESCE(s.middlename,'') || ' ' || COALESCE(s.lastname,'')) AS name
+        FROM students s
+        JOIN student_groups sg ON s.id = sg.student_id
+        WHERE sg.group_id = :gid AND sg.is_leader = TRUE
+        LIMIT 1
+    ");
+    $leaderStmt->execute(['gid' => $gid]);
+    $leader = $leaderStmt->fetchColumn() ?: 'Not assigned';
+
+    $membersStmt = $con->prepare("
+        SELECT TRIM(COALESCE(s.firstname,'') || ' ' || COALESCE(s.middlename,'') || ' ' || COALESCE(s.lastname,'')) AS name
+        FROM students s
+        JOIN student_groups sg ON s.id = sg.student_id
+        WHERE sg.group_id = :gid AND sg.is_leader = FALSE
+        ORDER BY s.firstname
+    ");
+    $membersStmt->execute(['gid' => $gid]);
+    $members = $membersStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $groupMembersData[$gid] = [
+        'leader'    => $leader,
+        'members'   => $members,
+        'is_leader' => $grp['is_leader'],
+    ];
 }
-
-// -- UREC documents (2 items) --------------------------------------------------
-$urecStmt = $con->prepare("
-    SELECT document_type, status FROM urec_documents
-    WHERE group_id = :group_id ORDER BY uploaded_at DESC
-");
-$urecStmt->execute(['group_id' => $group_id]);
-$urecDocs = $urecStmt->fetchAll(PDO::FETCH_ASSOC);
-
-$urecMap = [];
-foreach ($urecDocs as $doc) {
-    if (!isset($urecMap[$doc['document_type']])) $urecMap[$doc['document_type']] = $doc;
-}
-
-if (isset($urecMap['UREC Form'])      && $urecMap['UREC Form']['status']      === 'approved') $approvedCount++;
-if (isset($urecMap['UREC Clearance']) && $urecMap['UREC Clearance']['status'] === 'approved') $approvedCount++;
-
-// Grand total = 10
-$progressPercentage = round(($approvedCount / 10) * 100);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -240,16 +230,118 @@ $progressPercentage = round(($approvedCount / 10) * 100);
         </div>
     </div>
 
-    <div class="research-title-card">
-        <div class="title-icon"><i class="ri-book-open-line"></i></div>
-        <div class="title-content">
-            <h3>Research Title</h3>
-            <p><?= htmlspecialchars($groupTitle ?: 'No title yet') ?></p>
-            <?php if ($titleStatus !== 'missing'): ?>
-                <span class="status-badge status-<?= $titleStatus ?>"><?= ucfirst($titleStatus) ?></span>
+    <div class="title-group-row">
+
+        <div class="tg-card">
+            <div class="tg-card-header">
+                <div class="tg-card-icon"><i class="ri-book-open-line"></i></div>
+                <span class="tg-card-label">Research Titles</span>
+            </div>
+            <div class="tg-card-body">
+                <?php if (empty($allGroups)): ?>
+                    <div class="tg-empty">No title yet</div>
+                <?php else: ?>
+                    <?php foreach ($allGroups as $idx => $grp):
+                        $ts = $grp['title_status'] ?? 'missing';
+                        $badgeClass = match($ts) {
+                            'approved'         => 'status-approved',
+                            'pending_approval' => 'status-pending',
+                            'rejected'         => 'status-rejected',
+                            default            => 'status-missing'
+                        };
+                        $badgeText = match($ts) {
+                            'approved'         => 'Approved',
+                            'pending_approval' => 'Pending',
+                            'rejected'         => 'Rejected',
+                            default            => 'Missing'
+                        };
+                    ?>
+                        <div class="tg-item tg-title-clickable <?= $idx === 0 ? 'tg-title-active' : '' ?>"
+                             data-group-id="<?= $grp['group_id'] ?>"
+                             onclick="switchGroupProgress(<?= $grp['group_id'] ?>, this)">
+                            <span class="tg-item-title"><?= htmlspecialchars($grp['research_title'] ?: 'No title yet') ?></span>
+                            <span class="status-badge <?= $badgeClass ?>"><?= $badgeText ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="tg-card">
+            <div class="tg-card-header">
+                <div class="tg-card-icon"><i class="ri-team-line"></i></div>
+                <span class="tg-card-label">Groups</span>
+            </div>
+            <div class="tg-card-body">
+                <?php if (empty($allGroups)): ?>
+                    <div class="tg-empty">No group yet</div>
+                <?php else: ?>
+                    <?php foreach ($allGroups as $grp): ?>
+                        <div class="tg-item tg-group-item">
+                            <span class="tg-item-title"><?= htmlspecialchars($grp['group_name']) ?></span>
+                            <div class="tg-group-right">
+                                <?php if ($grp['is_leader']): ?>
+                                    <span class="tg-leader-badge"><i class="ri-star-fill"></i> Leader</span>
+                                <?php else: ?>
+                                    <span class="tg-member-badge">Member</span>
+                                <?php endif; ?>
+                                <button class="tg-dots-btn"
+                                    onclick="openGroupModal(<?= $grp['group_id'] ?>)"
+                                    title="View members">
+                                    <i class="ri-more-2-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+    </div>
+
+    <?php foreach ($allGroups as $grp):
+        $gid  = $grp['group_id'];
+        $data = $groupMembersData[$gid];
+    ?>
+    <div class="modal" id="groupModal_<?= $gid ?>">
+        <div class="modal-overlay" onclick="closeGroupModal(<?= $gid ?>)"></div>
+        <div class="modal-content group-modal-content">
+            <button class="modal-close" onclick="closeGroupModal(<?= $gid ?>)">&times;</button>
+            <h3><i class="ri-team-line"></i> <?= htmlspecialchars($grp['group_name']) ?></h3>
+
+            <div class="group-modal-section">
+                <div class="group-modal-label"><i class="ri-star-fill"></i> Leader</div>
+                <div class="group-modal-member leader-member">
+                    <i class="ri-user-star-line"></i>
+                    <span><?= htmlspecialchars($data['leader']) ?></span>
+                    <?php if ($data['is_leader']): ?>
+                        <span class="group-you-badge">You</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <?php if (!empty($data['members'])): ?>
+            <div class="group-modal-section">
+                <div class="group-modal-label"><i class="ri-group-line"></i> Members</div>
+                <?php foreach ($data['members'] as $member): ?>
+                    <div class="group-modal-member">
+                        <i class="ri-user-3-line"></i>
+                        <span><?= htmlspecialchars($member) ?></span>
+                        <?php if (!$data['is_leader'] && trim($member) === trim($_SESSION['name'])): ?>
+                            <span class="group-you-badge">You</span>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <div class="group-modal-section">
+                <div class="group-modal-label"><i class="ri-group-line"></i> Members</div>
+                <p style="color:#999;font-size:13px;padding:8px 0;">No other members yet.</p>
+            </div>
             <?php endif; ?>
         </div>
     </div>
+    <?php endforeach; ?>
 
     <div class="progress-card-enhanced">
         <div class="progress-header">
@@ -257,11 +349,13 @@ $progressPercentage = round(($approvedCount / 10) * 100);
                 <i class="ri-bar-chart-box-line"></i>
                 <h2>Research Progress</h2>
             </div>
-            <div class="progress-percentage"><?= $progressPercentage ?>%</div>
+            <div class="progress-percentage" id="progressPercent"><?= $progressPercentage ?>%</div>
         </div>
-        <div class="progress-description"><?= $approvedCount ?> of 10 Requirements Completed</div>
+        <div class="progress-description" id="progressDesc">
+            <?= $approvedCount ?> of <?= $REQUIRED_TOTAL ?> Required Milestones Completed
+        </div>
         <div class="progress-bar-enhanced">
-            <div class="progress-bar-fill-enhanced" style="width: <?= $progressPercentage ?>%;"></div>
+            <div class="progress-bar-fill-enhanced" id="progressBarFill" style="width: <?= $progressPercentage ?>%;"></div>
         </div>
     </div>
 
@@ -272,7 +366,7 @@ $progressPercentage = round(($approvedCount / 10) * 100);
                 <p class="chart-subtitle-student">Track your research journey</p>
             </div>
             <div id="root"></div>
-            <script type="module" src="./react-app/dist/assets/student-DSRl6HVe.js" defer></script>
+            <script type="module" src="./react-app/dist/assets/student-DskrHSe7.js" defer></script>
         </div>
     </div>
 
@@ -280,6 +374,32 @@ $progressPercentage = round(($approvedCount / 10) * 100);
 </main>
 
 <script>
+const groupProgressMap = <?= json_encode($groupProgressMap) ?>;
+const requiredTotal    = <?= $REQUIRED_TOTAL ?>;
+
+function switchGroupProgress(groupId, el) {
+    document.querySelectorAll('.tg-title-clickable').forEach(t => t.classList.remove('tg-title-active'));
+    el.classList.add('tg-title-active');
+
+    const data  = groupProgressMap[groupId] || { count: 0, percent: 0 };
+    const pct   = data.percent;
+    const count = data.count;
+
+    document.getElementById('progressPercent').textContent = pct + '%';
+    document.getElementById('progressDesc').textContent    = count + ' of ' + requiredTotal + ' Required Milestones Completed';
+
+    const fill = document.getElementById('progressBarFill');
+    fill.style.transition = 'width 0.5s ease';
+    fill.style.width      = pct + '%';
+}
+
+function openGroupModal(gid) {
+    document.getElementById('groupModal_' + gid).classList.add('open');
+}
+function closeGroupModal(gid) {
+    document.getElementById('groupModal_' + gid).classList.remove('open');
+}
+
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 document.getElementById('currentDateStudent').textContent =
     new Date().toLocaleDateString('en-US', dateOptions);

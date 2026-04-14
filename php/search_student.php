@@ -19,20 +19,35 @@ if (strlen($query) < 1) {
 $like = '%' . $query . '%';
 
 $stmt = $con->prepare("
-    SELECT 
-        school_id,
-        COALESCE(NULLIF(TRIM(full_name), ''), TRIM(firstname || ' ' || middlename || ' ' || lastname)) AS name,
-        program
-    FROM student
-    WHERE school_id ILIKE ?
-       OR full_name ILIKE ?
-       OR firstname ILIKE ?
-       OR middlename ILIKE ?
-       OR lastname ILIKE ?
-    ORDER BY school_id
+    SELECT
+        s.id,
+        s.school_id,
+        TRIM(COALESCE(s.firstname,'') || ' ' || COALESCE(s.middlename,'') || ' ' || COALESCE(s.lastname,'')) AS name,
+        p.code as program
+    FROM students s
+    LEFT JOIN programs p ON s.program_id = p.id
+    WHERE s.school_id ILIKE :q1
+       OR s.firstname  ILIKE :q2
+       OR s.middlename ILIKE :q3
+       OR s.lastname   ILIKE :q4
+    ORDER BY s.school_id
     LIMIT 10
 ");
-$stmt->execute([$like, $like, $like, $like, $like]);
+$stmt->execute(['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $like]);
 
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($results as &$row) {
+    $groupStmt = $con->prepare("
+        SELECT g.name, sg.is_leader
+        FROM student_groups sg
+        JOIN groups g ON sg.group_id = g.id
+        WHERE sg.student_id = :student_id
+        ORDER BY g.name
+    ");
+    $groupStmt->execute(['student_id' => $row['id']]);
+    $row['groups'] = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
+}
+unset($row);
+
 echo json_encode($results);

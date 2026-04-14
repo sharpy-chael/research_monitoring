@@ -8,9 +8,8 @@ $sessionTimeoutSeconds = $sessionTimeoutMinutes * 60;
 
 if (isset($_SESSION['last_activity'])) {
     $inactiveTime = time() - $_SESSION['last_activity'];
-    
-    if ($inactiveTime > $sessionTimeoutSeconds) {
 
+    if ($inactiveTime > $sessionTimeoutSeconds) {
         if (isset($_SESSION['id']) && isset($_SESSION['role'])) {
             include_once(__DIR__ . '/php/log_helper.php');
             logActivity(
@@ -18,10 +17,10 @@ if (isset($_SESSION['last_activity'])) {
                 $_SESSION['id'],
                 $_SESSION['role'],
                 'session_timeout',
-                $_SESSION['name'] . ' session expired due to inactivity'
+                ($_SESSION['name'] ?? 'User') . ' session expired due to inactivity'
             );
         }
-        
+
         session_unset();
         session_destroy();
         header('Location: portal.php?timeout=1');

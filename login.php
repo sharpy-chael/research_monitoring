@@ -1,30 +1,23 @@
-<!-- STUDENT LOG IN -->
 <?php
 session_start();
 include("connect.php");
 
-// Fetch active programs for the dropdown
 $activePrograms = [];
 try {
-    $programsStmt = $con->query("SELECT code, name FROM programs WHERE is_active = TRUE ORDER BY code");
+    $programsStmt = $con->query("SELECT id, code, name FROM programs WHERE is_active = TRUE ORDER BY code");
     $activePrograms = $programsStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $activePrograms = [
-        ['code' => 'DIT',  'name' => 'Diploma in Information Technology'],
-        ['code' => 'BSIT', 'name' => 'Bachelor of Science in Information Technology']
-    ];
+    $activePrograms = [];
 }
 
 if (!empty($_POST['submit'])) {
-    $_SESSION['submit'] = $_POST['submit'];
     $school_id = $_POST['school_id'];
-    $program   = $_POST['program'];
-    $password  = $_POST['passw'];
+    $program_id = $_POST['program'];
+    $password = $_POST['passw'];
 
-    // ── 1. Check program is active ───────────────────────────────────────────
     try {
-        $programStmt = $con->prepare("SELECT is_active FROM programs WHERE code = :program");
-        $programStmt->execute(['program' => $program]);
+        $programStmt = $con->prepare("SELECT is_active FROM programs WHERE id = :program_id");
+        $programStmt->execute(['program_id' => $program_id]);
         $programData = $programStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$programData || !$programData['is_active']) {
@@ -32,31 +25,28 @@ if (!empty($_POST['submit'])) {
             header("Location: login.php");
             exit;
         }
-    } catch (PDOException $e) {
-        // If programs table doesn't exist, continue
-    }
+    } catch (PDOException $e) {}
 
-    // ── 2. Verify credentials ────────────────────────────────────────────────
-    $stmt = $con->prepare("SELECT * FROM student WHERE school_id = :school_id AND program = :program");
-    $stmt->execute(['school_id' => $school_id, 'program' => $program]);
+    $stmt = $con->prepare("
+        SELECT u.*, s.id AS student_id, s.firstname, s.lastname, s.school_id AS sid, s.is_active AS student_active, s.images AS images
+        FROM users u
+        JOIN students s ON s.user_id = u.id
+        WHERE s.school_id = :school_id AND s.program_id = :program_id AND u.role = 'student'
+    ");
+    $stmt->execute(['school_id' => $school_id, 'program_id' => $program_id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row && password_verify($password, $row['pass_word'])) {
-
-        // ── 3. Check account is active ───────────────────────────────────────
-        if (!$row['is_active']) {
+        if (!$row['is_active'] || !$row['student_active']) {
             $_SESSION['error_message'] = "Your account has been deactivated. Contact the administrator.";
             header("Location: login.php");
             exit;
         }
 
-        // ── 4. Academic Year check ───────────────────────────────────────────
         try {
             $ayStmt = $con->prepare("
-                SELECT year_start, year_end
-                FROM academic_years
-                WHERE is_active = true
-                  AND CURRENT_DATE BETWEEN year_start AND year_end
+                SELECT year_start, year_end FROM academic_years
+                WHERE is_active = true AND CURRENT_DATE BETWEEN year_start AND year_end
                 LIMIT 1
             ");
             $ayStmt->execute();
@@ -64,32 +54,27 @@ if (!empty($_POST['submit'])) {
 
             if (!$activeAY) {
                 $latestAY = $con->query("
-                    SELECT year_start, year_end
-                    FROM academic_years
-                    ORDER BY year_end DESC
-                    LIMIT 1
+                    SELECT year_start, year_end FROM academic_years ORDER BY year_end DESC LIMIT 1
                 ")->fetch(PDO::FETCH_ASSOC);
 
                 $yearLabel = $latestAY
-                    ? "Academic Year " . date('Y', strtotime($latestAY['year_start']))
-                      . "–" . date('Y', strtotime($latestAY['year_end']))
+                    ? "Academic Year " . date('Y', strtotime($latestAY['year_start'])) . "–" . date('Y', strtotime($latestAY['year_end']))
                     : "the current academic year";
 
                 $_SESSION['error_message'] = "The {$yearLabel} is over. Please contact the administrator.";
                 header("Location: login.php");
                 exit;
             }
-        } catch (PDOException $e) {
-            // If academic_years table doesn't exist, continue
-        }
-        // ── End Academic Year check ──────────────────────────────────────────
+        } catch (PDOException $e) {}
 
-        $_SESSION['name']      = $row['name'];
-        $_SESSION['id']        = $row['id'];
-        $_SESSION['school_id'] = $row['school_id'];
-        $_SESSION['program']   = $row['program'];
-        $_SESSION['images']    = $row['images'];
-        $_SESSION['role']      = 'student';
+        $_SESSION['name'] = $row['firstname'] . ' ' . $row['lastname'];
+        $_SESSION['id'] = $row['id'];
+        $_SESSION['school_id'] = $row['sid'];
+        $_SESSION['student_id'] = $row['student_id'];
+        $_SESSION['program_id'] = $program_id;
+        $_SESSION['images'] = $row['images'];
+        $_SESSION['role'] = 'student';
+        $_SESSION['submit'] = true;
 
         include('php/log_helper.php');
         logActivity($con, $_SESSION['id'], $_SESSION['role'], 'login', $_SESSION['name'] . ' logged in');
@@ -109,7 +94,6 @@ if (!empty($_POST['submit'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,7 +111,6 @@ if (!empty($_POST['submit'])) {
         <div class="error-message"><?= htmlspecialchars($_SESSION['error_message']) ?></div>
         <?php unset($_SESSION['error_message']); ?>
     <?php endif; ?>
-
     <div class="wrapper">
         <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
         <form method="post" action="#">
@@ -142,7 +125,7 @@ if (!empty($_POST['submit'])) {
                 <select name="program" required>
                     <option value="" disabled selected>Select your program</option>
                     <?php foreach ($activePrograms as $prog): ?>
-                        <option value="<?= htmlspecialchars($prog['code']) ?>">
+                        <option value="<?= htmlspecialchars($prog['id']) ?>">
                             <?= htmlspecialchars($prog['name']) ?>
                         </option>
                     <?php endforeach; ?>
@@ -162,7 +145,6 @@ if (!empty($_POST['submit'])) {
             </div>
         </form>
     </div>
-
     <footer class="footer">
         <p>© 2025 Research Monitoring System</p>
     </footer>

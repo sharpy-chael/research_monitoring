@@ -12,7 +12,7 @@ function AppAdvisor() {
     const fetchData = async () => {
       try {
         // FIXED: Correct path - data folder is at root level
-        const res = await fetch("/research_monitoring/data/get_advisor_data.php");
+        const res = await fetch("/research_monitoring_system/data/get_advisor_data.php");
         
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

@@ -703,7 +703,38 @@ body {
   background: #e6ffed;
   border: 2px solid #0c6e1c;
 }
+.toast-notif {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999;
+  min-width: 260px;
+  max-width: 400px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  opacity: 0;
+  transform: translateY(-16px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
 
+.toast-notif.toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-notif.removing {
+  opacity: 0;
+  transform: translateY(-16px);
+}
+
+.toast-notif.toast-success { background: #1a7f3c; }
+.toast-notif.toast-error   { background: #a30000; }
+.toast-notif.toast-warning { background: #b45309; }
 @media (max-width: 992px) {
   .profile-wrapper {
     flex-direction: column;

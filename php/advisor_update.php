@@ -7,14 +7,14 @@ if (!isset($_SESSION['id'])) {
     die("Advisor not identified.");
 }
 
-$advisor_id = $_SESSION['id'];
+$advisorUserId = $_SESSION['id'];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $name       = $_POST['name'] ?? '';
-    $department = $_POST['department'] ?? '';
-    $email      = $_POST['email'] ?? '';
-    $address    = $_POST['address'] ?? '';
-    $gender     = $_POST['gender'] ?? '';
+    $name       = trim($_POST['name']       ?? '');
+    $department = trim($_POST['department'] ?? '');
+    $email      = trim($_POST['email']      ?? '');
+    $address    = trim($_POST['address']    ?? '');
+    $gender     = trim($_POST['gender']     ?? '');
 
     $updateImage = "";
     $params = [
@@ -23,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         'email'      => $email,
         'address'    => $address,
         'gender'     => $gender,
-        'id'         => $advisor_id
+        'user_id'    => $advisorUserId
     ];
 
     if (!empty($_FILES['profile_image']['name'])) {
@@ -41,13 +41,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    $sql = "UPDATE advisor SET name = :name, department = :department, email = :email, address = :address, gender = :gender $updateImage WHERE id = :id";
+    $sql = "UPDATE faculties SET name = :name, department = :department, email = :email, address = :address, gender = :gender $updateImage WHERE user_id = :user_id";
     $stmt = $con->prepare($sql);
+
     if ($stmt->execute($params)) {
+        $con->prepare("UPDATE users SET username = :name WHERE id = :user_id")
+            ->execute(['name' => $name, 'user_id' => $advisorUserId]);
+
         $_SESSION['name'] = $name;
         if (!empty($params['images'])) {
             $_SESSION['images'] = $params['images'];
         }
+
+        logActivity($con, $_SESSION['id'], $_SESSION['role'], 'update_profile', $_SESSION['name'] . ' updated their profile');
+        $_SESSION['flash_success'] = 'Personal Info Updated Successfully';
         header("Location: ../advisor_profile.php");
         exit();
     } else {

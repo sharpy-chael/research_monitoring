@@ -1,14 +1,17 @@
-<!-- ADVISOR LOG IN -->
 <?php
 session_start();
 include "connect.php";
 
 if (!empty($_POST['submit'])) {
-    $_SESSION['submit'] = $_POST['submit'];
     $name = trim($_POST['name']);
     $password = $_POST['password'];
 
-    $stmt = $con->prepare("SELECT * FROM advisor WHERE name = :name");
+   $stmt = $con->prepare("
+    SELECT u.*, u.username AS full_name, f.id AS faculty_id, f.images AS images
+    FROM users u
+    JOIN faculties f ON f.user_id = u.id
+    WHERE u.username = :name AND u.role = 'advisor'
+");
     $stmt->execute(['name' => $name]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -19,11 +22,12 @@ if (!empty($_POST['submit'])) {
             exit;
         }
 
-        $_SESSION['name'] = $row['name'];
+        $_SESSION['name'] = $row['full_name'];
         $_SESSION['id'] = $row['id'];
-        $_SESSION['advisor_id'] = $row['advisor_id'];
+        $_SESSION['advisor_id'] = $row['faculty_id'];
         $_SESSION['images'] = $row['images'];
         $_SESSION['role'] = 'advisor';
+        $_SESSION['submit'] = true;
 
         include('php/log_helper.php');
         logActivity($con, $_SESSION['id'], $_SESSION['role'], 'login', $_SESSION['name'] . ' logged in');
@@ -42,7 +46,6 @@ if (!empty($_POST['submit'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,7 +63,6 @@ if (!empty($_POST['submit'])) {
         <div class="error-message"><?php echo $_SESSION['error_message']; ?></div>
         <?php unset($_SESSION['error_message']); ?>
     <?php endif; ?>
-
     <div class="wrap">
         <a href="portal.php"><i class='bx bxs-arrow-left-stroke'></i></a>
         <form action="" method="post">
@@ -83,7 +85,6 @@ if (!empty($_POST['submit'])) {
             </div>
         </form>
     </div>
-
     <footer class="footer">
         <p>© 2025 Research Monitoring System</p>
     </footer>

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+
     <!-- Background grid overlay -->
     <div class="body-grid"></div>
 

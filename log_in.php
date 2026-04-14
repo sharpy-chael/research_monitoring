@@ -1,16 +1,13 @@
-<!-- ADMIN LOG IN -->
 <?php
 session_start();
-include "connect.php"; 
+include "connect.php";
 
 if (!empty($_POST['submit'])) {
-    $_SESSION['submit'] = $_POST['submit'];
     $name = $_POST['name'];
     $password = $_POST['password'];
 
-    $stmt = $con->prepare("SELECT * FROM admin WHERE name = :name");
+    $stmt = $con->prepare("SELECT * FROM users WHERE username = :name AND role = 'admin'");
     $stmt->execute(['name' => $name]);
-
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row && password_verify($password, $row['pass_word'])) {
@@ -19,16 +16,15 @@ if (!empty($_POST['submit'])) {
             header("Location: log_in.php");
             exit;
         }
-        
-        $_SESSION['name'] = $row['name'];
+
+        $_SESSION['name'] = $row['username'];
         $_SESSION['id'] = $row['id'];
         $_SESSION['role'] = 'admin';
+        $_SESSION['submit'] = true;
 
-        if (!isset($_SESSION['from_portal']) || $_SESSION['from_portal'] !== true) {
-            header('Location: portal.php');
-            exit();
-        }
+    if (isset($_SESSION['from_portal']) && $_SESSION['from_portal'] === true) {
         unset($_SESSION['from_portal']);
+    }
         header("Location: users.php");
         exit;
     } else {
@@ -38,7 +34,6 @@ if (!empty($_POST['submit'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

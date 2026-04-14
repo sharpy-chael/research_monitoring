@@ -1,16 +1,13 @@
 <?php
 session_start();
-include("connect.php"); 
+include("connect.php");
 
 $activePrograms = [];
 try {
-    $programsStmt = $con->query("SELECT code, name FROM programs WHERE is_active = TRUE ORDER BY code");
+    $programsStmt = $con->query("SELECT id, code, name FROM programs WHERE is_active = TRUE ORDER BY code");
     $activePrograms = $programsStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $activePrograms = [
-        ['code' => 'DIT', 'name' => 'Diploma in Information Technology'],
-        ['code' => 'BSIT', 'name' => 'Bachelor of Science in Information Technology']
-    ];
+    $activePrograms = [];
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
@@ -18,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     $firstname  = trim($_POST['firstname']  ?? '');
     $middlename = trim($_POST['middlename'] ?? '');
     $school_id  = trim($_POST['school_id']  ?? '');
-    $program    = $_POST['program'];
+    $program_id = $_POST['program'];
     $password   = $_POST['passw'];
 
     if (!$lastname || !$firstname) {
@@ -28,8 +25,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
     }
 
     try {
-        $programStmt = $con->prepare("SELECT is_active FROM programs WHERE code = :program");
-        $programStmt->execute(['program' => $program]);
+        $programStmt = $con->prepare("SELECT is_active FROM programs WHERE id = :program_id");
+        $programStmt->execute(['program_id' => $program_id]);
         $programData = $programStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$programData || !$programData['is_active']) {
@@ -37,43 +34,57 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
             header("Location: signup.php");
             exit();
         }
-    } catch (PDOException $e) {
-    }
+    } catch (PDOException $e) {}
 
     $number = preg_match('@[0-9]@', $password);
-    $rules  = strlen($password) >= 8 && $number;
-
-    if (!$rules) {
+    if (strlen($password) < 8 || !$number) {
         $_SESSION['error_message'] = "The password should be valid";
+        header("Location: signup.php");
+        exit();
+    }
+
+    $checkStmt = $con->prepare("SELECT id FROM students WHERE school_id = :school_id");
+    $checkStmt->execute(['school_id' => $school_id]);
+    if ($checkStmt->fetch()) {
+        $_SESSION['error_message'] = "School ID already exists!";
         header("Location: signup.php");
         exit();
     }
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt = $con->prepare("
-        INSERT INTO student (lastname, firstname, middlename, school_id, program, pass_word)
-        VALUES (:lastname, :firstname, :middlename, :school_id, :program, :password)
-    ");
-
     try {
-        $stmt->execute([
-            'lastname'   => $lastname,
-            'firstname'  => $firstname,
-            'middlename' => $middlename,
-            'school_id'  => $school_id,
-            'program'    => $program,
-            'password'   => $hashed_password
+        $con->beginTransaction();
+
+        $userStmt = $con->prepare("
+            INSERT INTO users (username, pass_word, role, is_active)
+            VALUES (:username, :password, 'student', TRUE)
+        ");
+        $userStmt->execute([
+            'username' => $school_id,
+            'password' => $hashed_password
         ]);
+        $user_id = $con->lastInsertId();
+
+        $studentStmt = $con->prepare("
+            INSERT INTO students (user_id, school_id, firstname, lastname, program_id, is_active)
+            VALUES (:user_id, :school_id, :firstname, :lastname, :program_id, TRUE)
+        ");
+        $studentStmt->execute([
+            'user_id'    => $user_id,
+            'school_id'  => $school_id,
+            'firstname'  => $firstname,
+            'lastname'   => $lastname,
+            'program_id' => $program_id
+        ]);
+
+        $con->commit();
         $_SESSION['success_message'] = "Account created successfully!";
         header("Location: signup.php");
         exit();
     } catch (PDOException $e) {
-        if ($e->getCode() == 23505) {
-            $_SESSION['error_message'] = "School ID already exists!";
-        } else {
-            $_SESSION['error_message'] = "Error creating account: " . $e->getMessage();
-        }
+        $con->rollBack();
+        $_SESSION['error_message'] = "Error creating account: " . $e->getMessage();
         header("Location: signup.php");
         exit();
     }
@@ -125,7 +136,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submit"])) {
                     <select name="program" required>
                         <option value="" disabled selected>Select your program</option>
                         <?php foreach ($activePrograms as $prog): ?>
-                            <option value="<?= htmlspecialchars($prog['code']) ?>">
+                            <option value="<?= htmlspecialchars($prog['id']) ?>">
                                 <?= htmlspecialchars($prog['name']) ?>
                             </option>
                         <?php endforeach; ?>

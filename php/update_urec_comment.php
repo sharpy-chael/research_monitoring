@@ -1,15 +1,13 @@
 <?php
-include("connect.php");
+include("../connect.php");
 session_start();
 
-// Prevent any output before JSON
 ob_start();
-
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['submit'])) {
     ob_end_clean();
-    echo json_encode(['success' => false, 'message' => 'Unauthorized - Not logged in']);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 
@@ -19,28 +17,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$document_id = $_POST['document_id'] ?? null;
-$comment = trim($_POST['comment'] ?? '');
+$upload_id = $_POST['upload_id']   ?? null;
+$comment   = trim($_POST['comment'] ?? '');
 
-if (!$document_id) {
+if (!$upload_id) {
     ob_end_clean();
     echo json_encode(['success' => false, 'message' => 'Invalid parameters']);
     exit;
 }
 
 try {
-    $stmt = $con->prepare("UPDATE urec_documents SET comment = :comment WHERE id = :document_id");
-    $result = $stmt->execute([
-        'comment' => $comment,
-        'document_id' => $document_id
-    ]);
-    
+    $stmt = $con->prepare("UPDATE uploads SET comment = :comment WHERE upload_id = :id");
+    $result = $stmt->execute(['comment' => $comment, 'id' => $upload_id]);
+
     ob_end_clean();
-    
+
     if ($result) {
         echo json_encode(['success' => true]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update database']);
+        echo json_encode(['success' => false, 'message' => 'Failed to update comment']);
     }
 } catch (Exception $e) {
     ob_end_clean();
